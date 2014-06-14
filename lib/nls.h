@@ -29,5 +29,6 @@
 # define _(Text) (Text)
 #endif /* ENABLE_NLS */
 
+
 #endif
 

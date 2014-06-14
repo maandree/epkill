@@ -26,14 +26,12 @@
 #ifndef HAVE_PROGRAM_INVOCATION_SHORT_NAME
 # ifdef HAVE___PROGNAME
 extern char *__progname;
-#  define program_invocation_short_name __progname
+#  define program_invocation_short_name  __progname
 # else
 #  ifdef HAVE_GETEXECNAME
-#   define program_invocation_short_name \
-		prog_inv_sh_nm_from_file(getexecname(), 0)
+#   define program_invocation_short_name  prog_inv_sh_nm_from_file(getexecname(), 0)
 #  else
-#   define program_invocation_short_name \
-		prog_inv_sh_nm_from_file(__FILE__, 1)
+#   define program_invocation_short_name  prog_inv_sh_nm_from_file(__FILE__, 1)
 #  endif
 static char prog_inv_sh_nm_buf[256];
 static inline char *prog_inv_sh_nm_from_file(char *f, char stripext)
@@ -63,14 +61,14 @@ static inline char *prog_inv_sh_nm_from_file(char *f, char stripext)
 /*
  * Constant strings for usage() functions.
  */
-#define USAGE_HEADER     _("\nUsage:\n")
-#define USAGE_OPTIONS    _("\nOptions:\n")
-#define USAGE_SEPARATOR  _("\n")
-#define USAGE_HELP       _(" -h, --help     display this help and exit\n")
-#define USAGE_VERSION    _(" -V, --version  output version information and exit\n")
-#define USAGE_MAN_TAIL(_man)   _("\nFor more details see %s.\n"), _man
+#define USAGE_HEADER          _("\nUsage:\n")
+#define USAGE_OPTIONS         _("\nOptions:\n")
+#define USAGE_SEPARATOR       _("\n")
+#define USAGE_HELP            _(" -h, --help     display this help and exit\n")
+#define USAGE_VERSION         _(" -V, --version  output version information and exit\n")
+#define USAGE_MAN_TAIL(_man)  _("\nFor more details see %s.\n"), _man
 
-#define EPKILL_VERSION _("%s from %s\n"), program_invocation_short_name, PACKAGE_STRING
+#define EPKILL_VERSION        _("%s from %s\n"), program_invocation_short_name, PACKAGE_STRING
 
 
 #endif
