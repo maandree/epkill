@@ -29,8 +29,7 @@ void close_stdout(void)
 {
   if (close_stream(stdout) != 0 && !(errno == EPIPE))
     {
-      char const *write_error = _("write error");
-      error(0, errno, "%s", write_error);
+      error(0, errno, "%s", _("write error"));
       _exit(EXIT_FAILURE);
     }
 

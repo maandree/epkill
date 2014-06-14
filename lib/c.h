@@ -34,9 +34,9 @@ extern char *__progname;
 #   define program_invocation_short_name  prog_inv_sh_nm_from_file(__FILE__, 1)
 #  endif
 static char prog_inv_sh_nm_buf[256];
-static inline char *prog_inv_sh_nm_from_file(char *f, char stripext)
+static inline char* prog_inv_sh_nm_from_file(char* f, char stripext)
 {
-  char *t;
+  char* t;
   
   if ((t = strrchr(f, '/')) != NULL)
     t++;
@@ -54,9 +54,9 @@ static inline char *prog_inv_sh_nm_from_file(char *f, char stripext)
 # endif
 #endif
 
-#define xwarn(...) error(0, errno, __VA_ARGS__)
-#define xwarnx(...) error(0, 0, __VA_ARGS__)
-#define xerrx(STATUS, ...) error(STATUS, 0, __VA_ARGS__)
+#define xwarn(...)          error(0, errno, __VA_ARGS__)
+#define xwarnx(...)         error(0, 0, __VA_ARGS__)
+#define xerrx(STATUS, ...)  error(STATUS, 0, __VA_ARGS__)
 
 /*
  * Constant strings for usage() functions.
