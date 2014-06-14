@@ -19,51 +19,6 @@
 #include <errno.h>
 #include <error.h>
 
-/*
- * Compiler specific stuff
- */
-#ifndef __GNUC_PREREQ
-# if defined __GNUC__ && defined __GNUC_MINOR__
-#  define __GNUC_PREREQ(maj, min) \
-	((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
-# else
-#  define __GNUC_PREREQ(maj, min) 0
-# endif
-#endif
-
-/*
- * Function attributes
- */
-#ifndef __ul_alloc_size
-# if __GNUC_PREREQ (4, 3)
-#  define __ul_alloc_size(s) __attribute__((alloc_size(s)))
-# else
-#  define __ul_alloc_size(s)
-# endif
-#endif
-
-#ifndef __ul_calloc_size
-# if __GNUC_PREREQ (4, 3)
-#  define __ul_calloc_size(n, s) __attribute__((alloc_size(n, s)))
-# else
-#  define __ul_calloc_size(n, s)
-# endif
-#endif
-
-/*
- * Misc
- */
-#ifndef PATH_MAX
-# define PATH_MAX 4096
-#endif
-
-#ifndef TRUE
-# define TRUE 1
-#endif
-
-#ifndef FALSE
-# define FALSE 0
-#endif
 
 /*
  * Program name.
@@ -103,7 +58,6 @@ static inline char *prog_inv_sh_nm_from_file(char *f, char stripext)
 
 #define xwarn(...) error(0, errno, __VA_ARGS__)
 #define xwarnx(...) error(0, 0, __VA_ARGS__)
-#define xerr(STATUS, ...) error(STATUS, errno, __VA_ARGS__)
 #define xerrx(STATUS, ...) error(STATUS, 0, __VA_ARGS__)
 
 /*

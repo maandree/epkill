@@ -21,7 +21,7 @@
 #endif
 
 
-static inline __ul_alloc_size(1) void* xmalloc(const size_t size)
+static inline __attribute__((alloc_size(1))) void* xmalloc(const size_t size)
 {
   void* ret = malloc(size);
   if (!ret && size)
@@ -29,7 +29,7 @@ static inline __ul_alloc_size(1) void* xmalloc(const size_t size)
   return ret;
 }
 
-static inline __ul_alloc_size(2) void* xrealloc(void* ptr, const size_t size)
+static inline __attribute__((alloc_size(2))) void* xrealloc(void* ptr, const size_t size)
 {
   void* ret = realloc(ptr, size);
   if (!ret && size)
