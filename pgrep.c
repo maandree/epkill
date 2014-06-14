@@ -49,11 +49,11 @@
 #include "nsutils.h"
 #include "nls.h"
 #include "xalloc.h"
-#include "proc/readproc.h"
-#include "proc/sig.h"
-#include "proc/devname.h"
-#include "proc/sysinfo.h"
-#include "proc/version.h" /* procps_version */
+#include <proc/readproc.h>
+#include <proc/sig.h>
+#include <proc/devname.h>
+#include <proc/sysinfo.h>
+#include <proc/version.h> /* procps_version */
 
 static int i_am_pkill = 0;
 
@@ -778,7 +778,7 @@ static void parse_opts (int argc, char **argv)
 			++criteria_count;
 			break;
 		case 'V':
-			printf(PROCPS_NG_VERSION);
+			printf(EPKILL_VERSION);
 			exit(EXIT_SUCCESS);
 /*		case 'c':   / * Solaris: match by contract ID * /
  *			break; */

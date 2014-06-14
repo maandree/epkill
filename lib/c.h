@@ -6,8 +6,9 @@
  * Fundamental C definitions.
  */
 
-#ifndef PROCPS_NG_C_H
-#define PROCPS_NG_C_H
+#ifndef EPKILL_C_H
+#define EPKILL_C_H
+
 
 #include <limits.h>
 #include <stdint.h>
@@ -16,11 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#ifdef HAVE_ERROR_H
 #include <error.h>
-#else
-#include <stdarg.h>
-#endif
 
 /*
  * Compiler specific stuff
@@ -86,44 +83,24 @@ extern char *__progname;
 static char prog_inv_sh_nm_buf[256];
 static inline char *prog_inv_sh_nm_from_file(char *f, char stripext)
 {
-	char *t;
-
-	if ((t = strrchr(f, '/')) != NULL)
-		t++;
-	else
-		t = f;
-
-	strncpy(prog_inv_sh_nm_buf, t, sizeof(prog_inv_sh_nm_buf) - 1);
-	prog_inv_sh_nm_buf[sizeof(prog_inv_sh_nm_buf) - 1] = '\0';
-
-	if (stripext && (t = strrchr(prog_inv_sh_nm_buf, '.')) != NULL)
-		*t = '\0';
-
-	return prog_inv_sh_nm_buf;
+  char *t;
+  
+  if ((t = strrchr(f, '/')) != NULL)
+    t++;
+  else
+    t = f;
+  
+  strncpy(prog_inv_sh_nm_buf, t, sizeof(prog_inv_sh_nm_buf) - 1);
+  prog_inv_sh_nm_buf[sizeof(prog_inv_sh_nm_buf) - 1] = '\0';
+  
+  if (stripext && (t = strrchr(prog_inv_sh_nm_buf, '.')) != NULL)
+    *t = '\0';
+  
+  return prog_inv_sh_nm_buf;
 }
 # endif
 #endif
 
-/*
- * Error printing.
- */
-#ifndef HAVE_ERROR_H
-/* Emulate the error() function from glibc */
-__attribute__((__format__(__printf__, 3, 4)))
-static void error(int status, int errnum, const char *format, ...)
-{
-        va_list argp;
-        fprintf(stderr, "%s: ", program_invocation_short_name);
-        va_start(argp, format);
-        vfprintf(stderr, format, argp);
-        va_end(argp);
-        if (errnum != 0)
-                fprintf(stderr, ": error code %d", errnum);
-        fprintf(stderr, "\n");
-        if (status != 0)
-                exit(status);
-}
-#endif
 #define xwarn(...) error(0, errno, __VA_ARGS__)
 #define xwarnx(...) error(0, 0, __VA_ARGS__)
 #define xerr(STATUS, ...) error(STATUS, errno, __VA_ARGS__)
@@ -139,6 +116,8 @@ static void error(int status, int errnum, const char *format, ...)
 #define USAGE_VERSION    _(" -V, --version  output version information and exit\n")
 #define USAGE_MAN_TAIL(_man)   _("\nFor more details see %s.\n"), _man
 
-#define PROCPS_NG_VERSION _("%s from %s\n"), program_invocation_short_name, PACKAGE_STRING
+#define EPKILL_VERSION _("%s from %s\n"), program_invocation_short_name, PACKAGE_STRING
 
-#endif /* PROCPS_NG_C_H */
+
+#endif
+

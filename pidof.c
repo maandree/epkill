@@ -25,8 +25,8 @@
 #include "fileutils.h"
 #include "nls.h"
 #include "xalloc.h"
-#include "proc/readproc.h"
-#include "proc/version.h" /* procps_version */
+#include <proc/readproc.h>
+#include <proc/version.h> /* procps_version */
 
 
 #define grow_size(x)	(x = x * 5 / 4 + 1024)
@@ -321,7 +321,7 @@ int main (int argc, char **argv)
 			}
 			break;
 		case 'V':
-			printf (PROCPS_NG_VERSION);
+			printf (EPKILL_VERSION);
 			exit (EXIT_SUCCESS);
 		case 'h':
 		case '?':
