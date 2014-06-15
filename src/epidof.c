@@ -34,10 +34,10 @@
 
 
 pid_t* procs = NULL;
-static int proc_count = 0;
+static size_t proc_count = 0;
 
 pid_t* omitted_procs = NULL;
-static int omit_count = 0;
+static size_t omit_count = 0;
 
 static char* program = NULL;
 
@@ -72,7 +72,7 @@ static int __attribute__((__noreturn__)) usage(int opt)
 
 static int is_omitted(pid_t pid)
 {
-  int i;
+  size_t i;
   for (i = 0; i < omit_count; i++)
     if (pid == omitted_procs[i])
       return 1;
@@ -96,21 +96,19 @@ static char* get_basename(char* filename)
 
 static char* pid_link(pid_t pid, const char* base_name)
 {
+  size_t path_alloc_size = 0;
+  ssize_t len = 0;
+  char* result = NULL;
   char link[PROCPATHLEN];
-  char* result;
-  int path_alloc_size;
-  int len;
   
   snprintf(link, sizeof(link), "/proc/%d/%s", pid, base_name);
   
-  len = path_alloc_size = 0;
-  result = NULL;
   do
     {
-      if (len == path_alloc_size)
+      if (len == (ssize_t)path_alloc_size)
 	{
 	  path_alloc_size = grow_size(path_alloc_size);
-	  result = (char *)xrealloc(result, path_alloc_size);
+	  result = (char*)xrealloc(result, path_alloc_size);
 	}
       
       if ((len = readlink(link, result, path_alloc_size - 1)) < 0)
@@ -119,7 +117,7 @@ static char* pid_link(pid_t pid, const char* base_name)
 	  break;
 	}
     }
-  while (len == path_alloc_size);
+  while ((size_t)len == path_alloc_size);
   
   result[len] = '\0';
   return result;
@@ -130,8 +128,8 @@ static void select_procs(void)
 {
   PROCTAB* ptp;
   proc_t task;
-  int match;
-  static int size = 0;
+  size_t match;
+  static size_t size = 0;
   char* cmd_arg0;
   char* cmd_arg0base;
   char* cmd_arg1;
@@ -238,7 +236,7 @@ static void select_procs(void)
 
 static void add_to_omit_list(char* input_arg)
 {
-  static int omit_size = 0;
+  static size_t omit_size = 0;
   
   char* omit_str;
   char* endptr;
@@ -254,7 +252,7 @@ static void add_to_omit_list(char* input_arg)
 	  endptr = omit_str + sizeof("%PPID") - 1;
 	}
       else
-	omit_pid = strtoul(omit_str, &endptr, 10);
+	omit_pid = (pid_t)strtoul(omit_str, &endptr, 10);
       
       if (*endptr == '\0')
 	{
@@ -280,7 +278,7 @@ static void add_to_omit_list(char* input_arg)
 int main(int argc, char** argv)
 {
   int opt;
-  signed int i;
+  ssize_t i;
   int found = 0;
   int first_pid = 1;
   
@@ -329,9 +327,6 @@ int main(int argc, char** argv)
 	  printf(EPKILL_VERSION);
 	  exit(EXIT_SUCCESS);
 	case 'h':
-	case '?':
-	  usage(opt);
-	  break;
 	  /* compatibility-only switches */
 	case 'n': /* avoiding stat(2) on NFS volumes doesn't make any sense anymore ... */
 	  /* ... as this reworked solution does not use stat(2) at all */
@@ -339,6 +334,10 @@ int main(int argc, char** argv)
 	  /* ... of explicitly omitted PIDs is too 'expensive' and as we don't know */
 	  /* ... wheter it is still needed, we won't re-implement it unless ... */
 	  /* ... somebody gives us a good reason to do so :) */
+	  break;
+	case '?':
+	default:
+	  usage(opt);
 	  break;
 	}
     }
@@ -353,7 +352,7 @@ int main(int argc, char** argv)
       if (proc_count)
 	{
 	  found = 1;
-	  for (i = proc_count - 1; i >= 0; i--) /* and display their PIDs */
+	  for (i = (ssize_t)proc_count - 1; i >= 0; i--) /* and display their PIDs */
 	    {
 	      if (first_pid)
 		{

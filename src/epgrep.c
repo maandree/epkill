@@ -149,8 +149,8 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
   char* copy;
   char* ptr;
   char* sep_pos;
-  int i = 0;
-  int size = 0;
+  size_t i = 0;
+  size_t size = 0;
   struct el* list = NULL;
   
   if (str[0] == '\0')
@@ -165,7 +165,7 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
 	{
 	  size = size * 5 / 4 + 4;
 	  /* add 1 because slot zero is a count */
-	  list = xrealloc(list, 1 + size * sizeof *list);
+	  list = xrealloc(list, 1 + size * sizeof(*list));
 	}
       sep_pos = strchr(ptr, ',');
       if (sep_pos)
@@ -185,7 +185,7 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
       list = NULL;
     }
   else
-    list[0].num = i;
+    list[0].num = (long)i;
   return list;
 }
 
@@ -241,7 +241,8 @@ static struct el* read_pidfile(void)
   int fd;
   struct stat sbuf;
   char* endp;
-  int n, pid;
+  ssize_t n;
+  pid_t pid;
   struct el* list = NULL;
   
   fd = open(opt_pidfile, O_RDONLY | O_NOCTTY | O_NONBLOCK);
@@ -256,7 +257,7 @@ static struct el* read_pidfile(void)
   n = read(fd,buf + 1, sizeof(buf) - 2);
   if (n < 1)
     goto out;
-  pid = strtoul(buf + 1, &endp, 10);
+  pid = (pid_t)strtoul(buf + 1, &endp, 10);
   if ((endp <= buf + 1) || (pid < 1) || (pid > 0x7fffffff))
     goto out;
   if (*endp && !isspace(*endp))
@@ -366,7 +367,8 @@ static int conv_ns(const char* restrict name, struct el* restrict e)
 
 static int match_numlist(long value, const struct el* restrict list)
 {
-  int i, found = 0;
+  int found = 0;
+  long i;
   if (list == NULL)
     found = 0;
   else
@@ -378,7 +380,8 @@ static int match_numlist(long value, const struct el* restrict list)
 
 static int match_strlist(const char* restrict value, const struct el* restrict list)
 {
-  int i, found = 0;
+  int found = 0;
+  long i;
   if (list == NULL)
     found = 0;
   else
@@ -390,7 +393,8 @@ static int match_strlist(const char* restrict value, const struct el* restrict l
 
 static int match_ns(const proc_t* task, const proc_t* ns_task)
 {
-  int i, found = 1;
+  int found = 1;
+  long i;
   for (i = 0; i < NUM_NS; i++)
     if ((ns_flags & (1 << i)))
       if (task->ns[i] != ns_task->ns[i])
@@ -401,7 +405,7 @@ static int match_ns(const proc_t* task, const proc_t* ns_task)
 static void output_numlist(const struct el* restrict list, int num)
 {
   const char* delim = opt_delim;
-  int i;
+  long i;
   for (i = 0; i < num; i++)
     {
       if (i + 1 == num)
@@ -414,7 +418,7 @@ static void output_strlist(const struct el* restrict list, int num)
 {
   /* FIXME: escape codes */
   const char* delim = opt_delim;
-  int i;
+  long i;
   for (i = 0; i < num; i++)
     {
       if (i + 1 == num)
@@ -437,11 +441,11 @@ static PROCTAB* do_openproc(void)
     flags |= PROC_FILLNS;
   if (opt_euid && !opt_negate)
     {
-      int num = opt_euid[0].num;
-      int i = num;
-      uid_t* uids = xmalloc(num * sizeof(uid_t));
+      long num = opt_euid[0].num;
+      long i = num;
+      uid_t* uids = xmalloc((size_t)num * sizeof(uid_t));
       while (i-- > 0)
-	uids[i] = opt_euid[i+1].num;
+	uids[i] = (uid_t)(opt_euid[i+1].num);
       flags |= PROC_UID;
       ptp = openproc(flags, uids, num);
     }
@@ -484,14 +488,14 @@ static regex_t* do_regcomp(void)
   return preg;
 }
 
-static struct el* select_procs(int* num)
+static struct el* select_procs(size_t* num)
 {
   PROCTAB* ptp;
   proc_t task;
   unsigned long long saved_start_time; /* for new/old support */
   pid_t saved_pid = 0; /* for new/old support */
-  int matches = 0;
-  int size = 0;
+  size_t matches = 0;
+  size_t size = 0;
   regex_t* preg;
   pid_t myself = getpid();
   struct el* list = NULL;
@@ -538,14 +542,14 @@ static struct el* select_procs(int* num)
 	  else
 	    {
 	      char tty[256];
-	      dev_to_tty(tty, sizeof(tty) - 1, task.tty, task.XXXID, ABBREV_DEV);
+	      dev_to_tty(tty, sizeof(tty) - 1, (dev_t)(task.tty), task.XXXID, ABBREV_DEV);
 	      match = match_strlist(tty, opt_term);
 	    }
 	}
       if (task.cmdline && (opt_longlong || opt_full))
 	{
 	  int i = 0;
-	  int bytes = sizeof(cmdline) - 1;
+	  size_t bytes = sizeof(cmdline) - 1;
 	  
 	  /* make sure it is always NUL-terminated */
 	  cmdline[bytes] = 0;
@@ -664,7 +668,7 @@ static int signal_option(int* argc, char** argv)
 	  sig = atoi(argv[i] + 1);
 	if (-1 < sig)
 	  {
-	    memmove(argv + i, argv + i + 1, sizeof(char *) * (*argc - i));
+	    memmove(argv + i, argv + i + 1, sizeof(char *) * (size_t)(*argc - i));
 	    (*argc)--;
 	    return sig;
 	  }
@@ -863,6 +867,7 @@ static void parse_opts(int argc, char** argv)
 	  usage (opt);
 	  break;
 	case '?':
+	default:
 	  usage (optopt ? optopt : opt);
 	  break;
 	}
@@ -910,13 +915,13 @@ int main(int argc, char** argv)
   
   parse_opts(argc, argv);
   
-  procs = select_procs (&num);
+  procs = select_procs(&num);
   if (i_am_epkill)
     {
       int i;
       for (i = 0; i < num; i++)
 	{
-	  if (kill (procs[i].num, opt_signal) != -1)
+	  if (kill((pid_t)(procs[i].num), opt_signal) != -1)
 	    {
 	      if (opt_echo)
 		printf(_("%s killed (pid %lu)\n"), procs[i].str, procs[i].num);

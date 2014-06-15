@@ -22,7 +22,7 @@ int ns_read(pid_t pid, proc_t* ns_task)
 	  ns_task->ns[i] = 0;
 	}
       else
-	ns_task->ns[i] = attr.st_ino;
+	ns_task->ns[i] = (long int)attr.st_ino;
     }
   
   return rc;
