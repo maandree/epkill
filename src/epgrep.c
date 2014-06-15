@@ -20,30 +20,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
-#include <unistd.h>
-#include <ctype.h>
 #include <string.h>
-#include <sys/types.h>
+#include <errno.h>
+#include <ctype.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <pwd.h>
 #include <grp.h>
 #include <regex.h>
-#include <errno.h>
 #include <getopt.h>
 #include <sys/file.h>
 
-/* EXIT_SUCCESS is 0 */
-/* EXIT_FAILURE is 1 */
-#define EXIT_USAGE 2
-#define EXIT_FATAL 3
-#define XALLOC_EXIT_CODE EXIT_FATAL
+#define EXIT_USAGE  2
+#define EXIT_FATAL  3
 
-#define CMDSTRSIZE 4096
+#define CMDSTRSIZE  4096
 
 #define xstrdup   strdup
 #define xmalloc   malloc
@@ -52,11 +46,9 @@
 #include "c.h"
 #include "nsutils.h"
 #include "nls.h"
-#include <proc/readproc.h>
+
 #include <proc/sig.h>
 #include <proc/devname.h>
-#include <proc/sysinfo.h>
-#include <proc/version.h> /* procps_version */
 
 
 static int i_am_epkill = 0;
@@ -97,6 +89,8 @@ static struct el* opt_nslist = NULL;
 static char* opt_pattern = NULL;
 static char* opt_pidfile = NULL;
 
+static char* execname;
+
 /* by default, all namespaces will be checked */
 static int ns_flags = 0x3f;
 
@@ -106,7 +100,7 @@ static int __attribute__((__noreturn__)) usage(int opt)
   FILE* fp = err ? stderr : stdout;
   
   fputs(USAGE_HEADER, fp);
-  fprintf(fp, _(" %s [options] <pattern>\n"), program_invocation_short_name);
+  fprintf(fp, _(" %s [options] <pattern>\n"), execname);
   fputs(USAGE_OPTIONS, fp);
   if (i_am_epkill == 0)
     {
@@ -516,8 +510,7 @@ static struct el* select_procs(size_t* num)
   if (opt_oldest)  saved_pid = INT_MAX;
   if (opt_ns_pid && ns_read(opt_ns_pid, &ns_task))
     {
-      fputs(_("Error reading reference namespace information\n"),
-	    stderr);
+      fputs(_("Error reading reference namespace information\n"), stderr);
       exit(EXIT_FATAL);
     }
   
@@ -528,16 +521,16 @@ static struct el* select_procs(size_t* num)
       
       if (task.XXXID == myself)
 	continue;
-      else if (opt_newest && (task.start_time < saved_start_time))  match = 0;
-      else if (opt_oldest && (task.start_time > saved_start_time))  match = 0;
-      else if (opt_ppid && !match_numlist(task.ppid, opt_ppid))     match = 0;
-      else if (opt_pid && !match_numlist(task.tgid, opt_pid))       match = 0;
-      else if (opt_pgrp && !match_numlist(task.pgrp, opt_pgrp))     match = 0;
-      else if (opt_euid && !match_numlist(task.euid, opt_euid))     match = 0;
-      else if (opt_ruid && !match_numlist(task.ruid, opt_ruid))     match = 0;
-      else if (opt_rgid && !match_numlist(task.rgid, opt_rgid))     match = 0;
-      else if (opt_sid && !match_numlist(task.session, opt_sid))    match = 0;
-      else if (opt_ns_pid && !match_ns(&task, &ns_task))            match = 0;
+      else if (opt_newest && (task.start_time < saved_start_time))    match = 0;
+      else if (opt_oldest && (task.start_time > saved_start_time))    match = 0;
+      else if (opt_ppid   && !match_numlist(task.ppid,    opt_ppid))  match = 0;
+      else if (opt_pid    && !match_numlist(task.tgid,    opt_pid))   match = 0;
+      else if (opt_pgrp   && !match_numlist(task.pgrp,    opt_pgrp))  match = 0;
+      else if (opt_euid   && !match_numlist(task.euid,    opt_euid))  match = 0;
+      else if (opt_ruid   && !match_numlist(task.ruid,    opt_ruid))  match = 0;
+      else if (opt_rgid   && !match_numlist(task.rgid,    opt_rgid))  match = 0;
+      else if (opt_sid    && !match_numlist(task.session, opt_sid))   match = 0;
+      else if (opt_ns_pid && !match_ns(&task, &ns_task))              match = 0;
       else if (opt_term)
 	{
 	  if (task.tty == 0)
@@ -721,7 +714,7 @@ static void parse_opts(int argc, char** argv)
       { NULL }
     };
   
-  if (strstr(program_invocation_short_name, "epkill"))
+  if (strstr(execname, "kill"))
     {
       int sig;
       i_am_epkill = 1;
@@ -749,7 +742,6 @@ static void parse_opts(int argc, char** argv)
 	case 'e':
 	  opt_echo = 1;
 	  break;
-	  /* 'D': FreeBSD: print info about non-matches for debugging */
 	case 'F': /* FreeBSD: the arg is a file containing a PID to match */
 	  opt_pidfile = xstrdup(optarg);
 	  criteria_count++;
@@ -760,21 +752,15 @@ static void parse_opts(int argc, char** argv)
 	    usage(opt);
 	  criteria_count++;
 	  break;
-	  /* 'I:' FreeBSD: require confirmation before killing */
-	  /* 'J': Solaris: match by project ID (name or number) */
 	case 'L': /* FreeBSD: fail if pidfile (see -F) not locked */
 	  opt_lock++;
 	  break;
-	  /* 'M': FreeBSD: specify core (OS crash dump) file */
-	  /* 'N': FreeBSD: specify alternate namelist file (for us, System.map -- but we don't need it) */
 	case 'P': /* Solaris: match by PPID */
 	  opt_ppid = split_list(optarg, conv_num);
 	  if (opt_ppid == NULL)
 	    usage(opt);
 	  criteria_count++;
 	  break;
-	  /* 'S': FreeBSD: don't ignore the built-in kernel tasks */
-	  /* 'T': Solaris: match by "task ID" (probably not a Linux task) */
 	case 'U': /* Solaris: match by ruid/rgroup */
 	  opt_ruid = split_list(optarg, conv_uid);
 	  if (opt_ruid == NULL)
@@ -782,9 +768,8 @@ static void parse_opts(int argc, char** argv)
 	  criteria_count++;
 	  break;
 	case 'V':
-	  printf(EPKILL_VERSION);
+	  printf("%s %s", execname, VERSION);
 	  exit(EXIT_SUCCESS);
-	  /* 'c': Solaris: match by contract ID */
 	case 'c':
 	  opt_count = 1;
 	  break;
@@ -800,12 +785,6 @@ static void parse_opts(int argc, char** argv)
 	    usage(opt);
 	  criteria_count++;
 	  break;
-	  /* case 'i': * FreeBSD: ignore case. OpenBSD: withdrawn. See -I. This sucks. *
-	   *   if (opt_case)
-	   *     usage(opt);
-	   *   opt_case = REG_ICASE;
-	   *   break; */
-	  /* 'j': FreeBSD: restricted to the given jail ID */
 	case 'l': /* Solaris: long output format (epgrep only) Should require -f for beyond argv[0] maybe? */
 	  opt_long = 1;
 	  break;
@@ -850,11 +829,9 @@ static void parse_opts(int argc, char** argv)
 	case 'w': /* Linux: show threads (lightweight process) too */
 	  opt_threads = 1;
 	  break;
-	  /* OpenBSD -x, being broken, does a plain string */
 	case 'x': /* Solaris: use ^(regexp)$ in place of regexp (FreeBSD too) */
 	  opt_exact = 1;
 	  break;
-	  /* 'z': Solaris: match by zone ID */
 	case NS_OPTION:
 	  opt_ns_pid = atoi(optarg);
 	  if (opt_ns_pid == 0)
@@ -878,28 +855,24 @@ static void parse_opts(int argc, char** argv)
   
   if (opt_lock && !opt_pidfile)
     xerrx(EXIT_FAILURE, _("-L without -F makes no sense\n"
-			  "Try `%s --help' for more information."),
-	  program_invocation_short_name);
+			  "Try `%s --help' for more information."), execname);
   
   if(opt_pidfile)
     {
       opt_pid = read_pidfile();
-      if(!opt_pid)
+      if (!opt_pid)
 	xerrx(EXIT_FAILURE, _("pidfile not valid\n"
-			      "Try `%s --help' for more information."),
-	      program_invocation_short_name);
+			      "Try `%s --help' for more information."), execname);
     }
   
   if (argc - optind == 1)
     opt_pattern = argv[optind];
   else if (argc - optind > 1)
     xerrx(EXIT_FAILURE, _("only one pattern can be provided\n"
-			  "Try `%s --help' for more information."),
-	  program_invocation_short_name);
+			  "Try `%s --help' for more information."), execname);
   else if (criteria_count == 0)
     xerrx(EXIT_FAILURE, _("no matching criteria specified\n"
-			  "Try `%s --help' for more information."),
-	  program_invocation_short_name);
+			  "Try `%s --help' for more information."), execname);
 }
 
 
@@ -908,9 +881,8 @@ int main(int argc, char** argv)
   struct el* procs;
   int num;
   
-#ifdef HAVE_PROGRAM_INVOCATION_NAME
-  program_invocation_name = program_invocation_short_name;
-#endif
+  execname = *argv;
+  
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
@@ -929,9 +901,8 @@ int main(int argc, char** argv)
 		printf(_("%s killed (pid %lu)\n"), procs[i].str, procs[i].num);
 	      continue;
 	    }
-	  if (errno==ESRCH)
-	    /* gone now, which is OK */
-	    continue;
+	  if (errno == ESRCH)
+	    continue; /* gone now, which is OK */
 	  xwarn(_("killing pid %ld failed"), procs[i].num);
 	}
       if (opt_count)
@@ -946,6 +917,6 @@ int main(int argc, char** argv)
       else
 	output_numlist(procs,num);
   
-  return !num; /* exit(EXIT_SUCCESS) if match, otherwise exit(EXIT_FAILURE) */
+  return !num;
 }
 
