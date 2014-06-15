@@ -7,6 +7,7 @@ INFODIR = $(DATADIR)/info
 LICENSES = $(DATADIR)/licenses
 
 PKGNAME = epkill
+VERSION = 1.0
 
 
 WARN = -Wall -Wextra -pedantic -Wdouble-promotion -Wformat=2 -Winit-self       \
@@ -22,7 +23,9 @@ WARN = -Wall -Wextra -pedantic -Wdouble-promotion -Wformat=2 -Winit-self       \
        -Wsuggest-attribute=pure -Wsuggest-attribute=format -Wnormalized=nfkc
 # -Waggregate-return -Wwrite-strings
 
-FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 -DPACKAGE_STRING='"$(PKGNAME)"' $(WARN)
+EXPORTS = -DVERSION='"$(VERSION)"' -DPACKAGE_STRING='"$(PKGNAME)"'
+
+FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 $(EXPORTS) $(WARN)
 
 L = $$(pkg-config --libs libprocps) -largparser
 

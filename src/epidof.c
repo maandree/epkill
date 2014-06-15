@@ -23,15 +23,9 @@
 #include "c.h"
 #include "fileutils.h"
 #include "nls.h"
-#include "xalloc.h"
 
 #include <proc/readproc.h>
-#include <proc/version.h>
-
 #include <argparser.h>
-
-
-#define grow_size(x)  (x * 5 / 4 + 1024)
 
 
 pid_t* procs = NULL;
@@ -60,18 +54,7 @@ static int is_omitted(pid_t pid)
 }
 
 
-static char* get_basename(char* filename)
-{
-  char* pos;
-  char* result;
-  pos = result = filename;
-  
-  while (*pos != '\0')
-    if (*(pos++) == '/')
-      result = pos;
-  
-  return result;
-}
+#define basename(filename)  (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename)
 
 
 static char* pid_link(pid_t pid, const char* base_name)
@@ -86,10 +69,7 @@ static char* pid_link(pid_t pid, const char* base_name)
   do
     {
       if (len == (ssize_t)path_alloc_size)
-	{
-	  path_alloc_size = grow_size(path_alloc_size);
-	  result = (char*)xrealloc(result, path_alloc_size);
-	}
+	result = (char*)realloc(result, path_alloc_size <<= 1);
       
       if ((len = readlink(link, result, path_alloc_size - 1)) < 0)
 	{
@@ -121,7 +101,7 @@ static void select_procs(void)
   char* exe_link_base;
   
   /* get the input base name */
-  program_base = get_basename(program);
+  program_base = basename(program);
   
   ptp = openproc(PROC_FILLCOM | PROC_FILLSTAT);
   
@@ -150,14 +130,9 @@ static void select_procs(void)
 	  if (*cmd_arg0 == '-')
 	    cmd_arg0++;
 	  
-	  /* get the argv0 base name */
-	  cmd_arg0base = get_basename(cmd_arg0);
-	  
-	  /* get the /proc/<pid>/exe symlink value */
-	  exe_link = pid_link(task.XXXID, "exe");
-	  
-	  /* get the exe_link base name */
-	  exe_link_base = get_basename(exe_link);
+	  cmd_arg0base  = basename(cmd_arg0);           /* get the argv0 basename */
+	  exe_link      = pid_link(task.XXXID, "exe");  /* get the /proc/<pid>/exe symlink value */
+	  exe_link_base = basename(exe_link);           /* get the exe_link basename */
 	  
 	  match = 0;
 	  
@@ -195,10 +170,7 @@ static void select_procs(void)
 	  if (match)
 	    {
 	      if (proc_count == size)
-		{
-		  size = grow_size(size);
-		  procs = xrealloc(procs, size * sizeof(*procs));
-		}
+		procs = realloc(procs, (size <<= 1) * sizeof(*procs));
 	      if (procs)
 		procs[proc_count++] = task.XXXID;
 	      else
@@ -235,10 +207,7 @@ static void add_to_omit_list(char* input_arg)
       if (*endptr == '\0')
 	{
 	  if (omit_count == omit_size)
-	    {
-	      omit_size = grow_size(omit_size);
-	      omitted_procs = xrealloc(omitted_procs, omit_size * sizeof(*omitted_procs));
-	    }
+	    omitted_procs = realloc(omitted_procs, (omit_size <<= 1) * sizeof(*omitted_procs));
 	  if (omitted_procs)
 	    omitted_procs[omit_count++] = omit_pid;
 	  else
@@ -272,17 +241,17 @@ int main(int argc, char** argv)
   args_init(_("Find the PID for a process based on environment"),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
-  args_add_option(args_new_argumentless(NULL,        0, "-c", "--check-root",  NULL), "Restrict to processes running under the same root");
-  args_add_option(args_new_argumentless(NULL,        0, "-s", "--single-shot", NULL), "Return only one process ID");
-  args_add_option(args_new_argumentless(NULL,        0, "-x", "--scripts",     NULL), "Test the name of scripts");
-  args_add_option(args_new_argumented  (NULL, "PID", 0, "-o", "--omit-pid",    NULL), "Do not return a specific process ID");
-  args_add_option(args_new_argumentless(NULL,        0, "-h", "--help",        NULL), "Display this help information");
-  args_add_option(args_new_argumentless(NULL,        0, "-V", "--version",     NULL), "Print the name and version of this program");
+  args_add_option(args_new_argumentless(NULL,           0, "-c", "--check-root",  NULL), _("Restrict to processes running under the same root"));
+  args_add_option(args_new_argumentless(NULL,           0, "-s", "--single-shot", NULL), _("Return only one process ID"));
+  args_add_option(args_new_argumentless(NULL,           0, "-x", "--scripts",     NULL), _("Test the name of scripts"));
+  args_add_option(args_new_argumented  (NULL, _("PID"), 0, "-o", "--omit-pid",    NULL), _("Do not return a specific process ID"));
+  args_add_option(args_new_argumentless(NULL,           0, "-h", "--help",        NULL), _("Display this help information"));
+  args_add_option(args_new_argumentless(NULL,           0, "-V", "--version",     NULL), _("Print the name and version of this program"));
   
   args_parse(argc, argv);
   
   if (args_unrecognised_count || args_opts_used("-h"))  args_help();
-  else if (args_opts_used("-V"))                        printf("epidof 1.0");
+  else if (args_opts_used("-V"))                        printf("epidof " VERSION);
   else                                                  goto cont;
   args_dispose();
   return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;

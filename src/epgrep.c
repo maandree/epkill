@@ -45,16 +45,20 @@
 
 #define CMDSTRSIZE 4096
 
+#define xstrdup   strdup
+#define xmalloc   malloc
+#define xrealloc  realloc
+
 #include "c.h"
 #include "fileutils.h"
 #include "nsutils.h"
 #include "nls.h"
-#include "xalloc.h"
 #include <proc/readproc.h>
 #include <proc/sig.h>
 #include <proc/devname.h>
 #include <proc/sysinfo.h>
 #include <proc/version.h> /* procps_version */
+
 
 static int i_am_epkill = 0;
 
@@ -613,7 +617,7 @@ static struct el* select_procs(size_t* num)
 	if (list && (opt_long || opt_longlong || opt_echo))
 	  {
 	    list[matches].num = task.XXXID;
-	    list[matches++].str = xstrdup (cmdoutput);
+	    list[matches++].str = xstrdup(cmdoutput);
 	  }
 	else if (list)
 	  list[matches++].num = task.XXXID;
@@ -643,7 +647,7 @@ static struct el* select_procs(size_t* num)
 		      exit (EXIT_FATAL);
 		  }
 		if (opt_long)
-		  list[matches].str = xstrdup (cmdoutput);
+		  list[matches].str = xstrdup(cmdoutput);
 		list[matches++].num = subtask.XXXID;
 		memset(&subtask, 0, sizeof(subtask));
 	      }
@@ -652,7 +656,7 @@ static struct el* select_procs(size_t* num)
     
     memset(&task, 0, sizeof (task));
   }
-  closeproc (ptp);
+  closeproc(ptp);
   *num = matches;
   return list;
 }
@@ -855,20 +859,20 @@ static void parse_opts(int argc, char** argv)
 	case NS_OPTION:
 	  opt_ns_pid = atoi(optarg);
 	  if (opt_ns_pid == 0)
-	    usage (opt);
+	    usage(opt);
 	  criteria_count++;
 	  break;
 	case NSLIST_OPTION:
-	  opt_nslist = split_list (optarg, conv_ns);
+	  opt_nslist = split_list(optarg, conv_ns);
 	  if (opt_nslist == NULL)
-	    usage (opt);
+	    usage(opt);
 	  break;
 	case 'h':
-	  usage (opt);
+	  usage(opt);
 	  break;
 	case '?':
 	default:
-	  usage (optopt ? optopt : opt);
+	  usage(optopt ? optopt : opt);
 	  break;
 	}
     }
