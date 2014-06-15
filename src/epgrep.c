@@ -94,7 +94,7 @@ static void* new;
 #define xstrdup(var)         (new =  strdup(var),       new ? new : (perror(execname),            exit(EXIT_FAILURE), NULL))
 #define xmalloc(size)        (new =  malloc(size),      new ? new : (perror(execname),            exit(EXIT_FAILURE), NULL))
 #define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(execname), free(var), exit(EXIT_FAILURE), NULL))
-#define xerror(string)       (fprintf(stderr, _("%s: %s\n"), execname, string), exit(EXIT_FAILURE))
+#define xerror(string)       (fprintf(stderr, _("%s: %s\n"),     execname, string),       exit(EXIT_FAILURE))
 #define xxerror(string)      (fprintf(stderr, _("%s: %s: %s\n"), execname, string, name), exit(EXIT_FAILURE))
 #define xgetenv(name)        (new = getenv(name), new ? new : "")
 
