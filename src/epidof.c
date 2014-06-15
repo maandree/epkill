@@ -19,7 +19,6 @@
  */
 
 #include <stdio.h>
-#include <getopt.h>
 
 #include "c.h"
 #include "fileutils.h"
@@ -27,7 +26,9 @@
 #include "xalloc.h"
 
 #include <proc/readproc.h>
-#include <proc/version.h> /* procps_version */
+#include <proc/version.h>
+
+#include <argparser.h>
 
 
 #define grow_size(x)  (x * 5 / 4 + 1024)
@@ -47,27 +48,6 @@ static int opt_scripts_too    = 0;  /* -x */
 static int opt_rootdir_check  = 0;  /* -c */
 
 static char* epidof_root = NULL;
-
-
-static int __attribute__((__noreturn__)) usage(int opt)
-{
-  int err = opt == '?';
-  FILE* fp = err ? stderr : stdout;
-  
-  fputs(USAGE_HEADER, fp);
-  fprintf(fp, _(" %s [options] [program [...]]\n"), program_invocation_short_name);
-  fputs(USAGE_OPTIONS, fp);
-  fputs(_(" -s, --single-shot         return one PID only\n"), fp);
-  fputs(_(" -c, --check-root          omit processes with different root\n"), fp);
-  fputs(_(" -x                        also find shells running the named scripts\n"), fp);
-  fputs(_(" -o, --omit-pid <PID,...>  omit processes with PID\n"), fp);
-  fputs(USAGE_SEPARATOR, fp);
-  fputs(USAGE_HELP, fp);
-  fputs(USAGE_VERSION, fp);
-  fprintf(fp, USAGE_MAN_TAIL("epidof(1)"));
-  
-  exit(fp == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
-}
 
 
 static int is_omitted(pid_t pid)
@@ -237,16 +217,14 @@ static void select_procs(void)
 static void add_to_omit_list(char* input_arg)
 {
   static size_t omit_size = 0;
-  
   char* omit_str;
   char* endptr;
-  
   pid_t omit_pid;
   
   omit_str = strtok(input_arg, ",;:");
   while (omit_str)
     {
-      if (!strcmp(omit_str,"%PPID")) /* keeping this %PPID garbage for backward compatibility only */
+      if (!strcmp(omit_str, "%PPID")) /* keeping this %PPID garbage for backward compatibility only */
 	{
 	  omit_pid = getppid(); /* ... as it can be replaced with $$ in common shells */
 	  endptr = omit_str + sizeof("%PPID") - 1;
@@ -277,95 +255,68 @@ static void add_to_omit_list(char* input_arg)
 
 int main(int argc, char** argv)
 {
-  int opt;
-  ssize_t i;
   int found = 0;
   int first_pid = 1;
+  char* usage_str;
+  ssize_t i, n;
   
-  const char* opts = "scnxmo:?Vh";
-  
-  static const struct option longopts[] =
-    {
-      { "check-root",  no_argument,       NULL, 'c' },
-      { "single-shot", no_argument,       NULL, 's' },
-      { "omit-pid",    required_argument, NULL, 'o' },
-      { "help",        no_argument,       NULL, 'h' },
-      { "version",     no_argument,       NULL, 'V' },
-      { NULL }
-    };
-  
-#ifdef HAVE_PROGRAM_INVOCATION_NAME
-  program_invocation_name = program_invocation_short_name;
-#endif
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
   atexit(close_stdout);
   
+  n = (ssize_t)(strlen(_(" [options] [program...]")) + strlen(*argv) + 1);
+  usage_str = alloca((size_t)n * sizeof(char));
+  sprintf(usage_str, "%s %s", *argv, _("[options] [program...]"));
+  
+  args_init(_("Find the PID for a process based on environment"),
+	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
+  
+  args_add_option(args_new_argumentless(NULL,        0, "-c", "--check-root",  NULL), "Restrict to processes running under the same root");
+  args_add_option(args_new_argumentless(NULL,        0, "-s", "--single-shot", NULL), "Return only one process ID");
+  args_add_option(args_new_argumentless(NULL,        0, "-x", "--scripts",     NULL), "Test the name of scripts");
+  args_add_option(args_new_argumented  (NULL, "PID", 0, "-o", "--omit-pid",    NULL), "Do not return a specific process ID");
+  args_add_option(args_new_argumentless(NULL,        0, "-h", "--help",        NULL), "Display this help information");
+  args_add_option(args_new_argumentless(NULL,        0, "-V", "--version",     NULL), "Print the name and version of this program");
+  
+  args_parse(argc, argv);
+  
+  if (args_unrecognised_count || args_opts_used("-h"))  args_help();
+  else if (args_opts_used("-V"))                        printf("epidof 1.0");
+  else                                                  goto cont;
+  args_dispose();
+  return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;
+ cont:
+  
   /* process command-line options */
-  while ((opt = getopt_long(argc, argv, opts, longopts, NULL)) != -1)
+  if (args_opts_used("-s"))  opt_single_shot = 1;
+  if (args_opts_used("-x"))  opt_scripts_too = 1;
+  if (args_opts_used("-c") && (geteuid() == 0))
+    opt_rootdir_check = 1, epidof_root = pid_link(getpid(), "root");
+  if (args_opts_used("-o"))
     {
-      switch (opt)
-	{
-	case 's':
-	  opt_single_shot = 1;
-	  break;
-	case 'o':
-	  add_to_omit_list(optarg);
-	  break;
-	case 'x':
-	  opt_scripts_too = 1;
-	  break;
-	case 'c':
-	  if (geteuid() == 0)
-	    {
-	      opt_rootdir_check = 1;
-	      epidof_root = pid_link(getpid(), "root");
-	    }
-	  break;
-	case 'V':
-	  printf(EPKILL_VERSION);
-	  exit(EXIT_SUCCESS);
-	case 'h':
-	  /* compatibility-only switches */
-	case 'n': /* avoiding stat(2) on NFS volumes doesn't make any sense anymore ... */
-	  /* ... as this reworked solution does not use stat(2) at all */
-	case 'm': /* omitting relatives with argv[0] & argv[1] matching the argv[0] & argv[1] ...*/
-	  /* ... of explicitly omitted PIDs is too 'expensive' and as we don't know */
-	  /* ... wheter it is still needed, we won't re-implement it unless ... */
-	  /* ... somebody gives us a good reason to do so :) */
-	  break;
-	case '?':
-	default:
-	  usage(opt);
-	  break;
-	}
+      char** arr = args_opts_get("-o");
+      for (i = 0, n = (ssize_t)args_opts_get_count("-o"); i < n; i++)
+	add_to_omit_list(arr[i]);
     }
   
   /* main loop */
-  while (argc - optind) /* for each program */
+  for (n = 0; n < args_files_count; n++) /* for each program */
     {
-      program = argv[optind++];
-      
+      program = args_files[n];
+      proc_count = 0;
       select_procs(); /* get the list of matching processes */
       
-      if (proc_count)
+      if (proc_count > 0)
 	{
 	  found = 1;
 	  for (i = (ssize_t)proc_count - 1; i >= 0; i--) /* and display their PIDs */
 	    {
-	      if (first_pid)
-		{
-		  first_pid = 0;
-		  printf("%ld", (long)procs[i]);
-		}
-	      else
-		printf(" %ld", (long)procs[i]);
-	      
+	      printf(first_pid ? "%ld" : " %ld", (long)procs[i]);
+	      first_pid = 0;
 	      if (opt_single_shot)
 		break;
 	    }
-	  proc_count = 0;
 	}
     }
   
