@@ -1,5 +1,5 @@
 /**
- * epgrep/epkill — Utilities to filter the process table
+ * epgrep/epkill — pgrep/pkill with environment constraints
  * 
  * epgrep/epkill under the epkill project:
  *   Copyright © 2014        Mattias Andrée (maandree@member.fsf.org)
@@ -96,7 +96,7 @@ static void* new;
 #define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(execname), free(var), exit(EXIT_FAILURE), NULL))
 #define xerror(string)       (fprintf(stderr, _("%s: %s\n"), execname, string), exit(EXIT_FAILURE))
 #define xxerror(string)      (fprintf(stderr, _("%s: %s: %s\n"), execname, string, name), exit(EXIT_FAILURE))
-
+#define xgetenv(name)        (new = getenv(name), new ? new : "")
 
 
 /* we need to fill in only namespace information */
@@ -633,8 +633,12 @@ static void parse_opts(int argc, char** argv)
   
   i_am_epkill = strstr(execname, "kill") != NULL;
   
-  args_init(i_am_epkill ? _("pkill with environment constraints")
-	                : _("pgrep with environment constraints"),
+  args_init(i_am_epkill ? (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes")
+			   ? _("epkill with display isolation")
+			   : _("pkill with environment constraints"))
+	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")
+			   ? _("epgrep with display isolation")
+			   : _("pgrep with environment constraints")),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   if (i_am_epkill)
@@ -676,9 +680,19 @@ static void parse_opts(int argc, char** argv)
   
   args_parse(argc, argv);
   
-  if (args_unrecognised_count || args_opts_used("-h"))  args_help();
-  else if (args_opts_used("-V"))                        printf("%s %s", (i_am_epkill ? "epkill" : "epgrep"), VERSION);
-  else                                                  goto cont;
+  if (args_unrecognised_count || args_opts_used("-h"))
+    args_help();
+  else if (args_opts_used("-V"))
+    {
+      if (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))
+	printf("dpkill " VERSION);
+      else if (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes"))
+	printf("dpgrep " VERSION);
+      else
+	printf("%s " VERSION, i_am_epkill ? "epkill" : "epgrep");
+    }
+  else
+    goto cont;
   exit(args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS);
   return;
  cont:
@@ -777,7 +791,7 @@ int main(int argc, char** argv)
 	  if (kill((pid_t)(procs[i].num), opt_signal) != -1)
 	    {
 	      if (opt_echo)
-		printf(_("%s killed (pid %lu)\n"), procs[i].str, procs[i].num);
+		printf(_("%s killed (PID %lu)\n"), procs[i].str, procs[i].num);
 	      continue;
 	    }
 	  if (errno == ESRCH)

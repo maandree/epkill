@@ -1,5 +1,5 @@
 /**
- * epidof – Utility for listing pids of running processes
+ * epidof – pidof with environment constraints
  * 
  * epidof under the epkill project:
  *   Copyright © 2014  Mattias Andrée (maandree@member.fsf.org)
@@ -52,6 +52,7 @@ static void* new;
 #define __grow(var)          (var = var * 5 / 4 + 1024)
 #define basename(filename)   (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename)
 #define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(*argv), free(var), exit(EXIT_FAILURE), NULL))
+#define xgetenv(name)        (new = getenv(name), new ? new : "")
 
 
 static int is_omitted(pid_t pid)
@@ -225,7 +226,9 @@ int main(int argc, char** argv_)
   usage_str = alloca((size_t)n * sizeof(char));
   sprintf(usage_str, "%s%s", *argv, _(" [options] [program...]"));
   
-  args_init(_("pidof with environment constraints"),
+  args_init(!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes")
+	    ? _("epidof with display isolation")
+	    : _("pidof with environment constraints"),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   args_add_option(args_new_argumentless(NULL,           0, "-c", "--check-root",  NULL), _("Restrict to processes running under the same root"));
@@ -237,9 +240,12 @@ int main(int argc, char** argv_)
   
   args_parse(argc, argv);
   
-  if (args_unrecognised_count || args_opts_used("-h"))  args_help();
-  else if (args_opts_used("-V"))                        printf("epidof " VERSION);
-  else                                                  goto cont;
+  if (args_unrecognised_count || args_opts_used("-h"))
+    args_help();
+  else if (args_opts_used("-V"))
+    printf("%s " VERSION, !strcmp(xgetenv("THIS_IS_DPIDOF"), "yes") ? "dpidof" : "epidof");
+  else                                                  
+    goto cont;
   return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;
  cont:
   
