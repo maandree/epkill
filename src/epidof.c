@@ -1,4 +1,4 @@
-/*
+/**
  * epidof – Utility for listing pids of running processes
  * 
  * epidof under the epkill project:

@@ -1,4 +1,4 @@
-/*
+/**
  * epgrep/epkill — Utilities to filter the process table
  * 
  * epgrep/epkill under the epkill project:
