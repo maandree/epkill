@@ -220,37 +220,29 @@ static int has_fcntl(int fd)
 
 static struct el* read_pidfile(void)
 {
+  struct el* list = NULL;
+  struct stat sbuf;
   char buf[12];
   int fd;
-  struct stat sbuf;
   char* endp;
   ssize_t n;
   pid_t pid;
-  struct el* list = NULL;
   
-  fd = open(opt_pidfile, O_RDONLY | O_NOCTTY | O_NONBLOCK);
-  if (fd < 0)
-    goto just_ret;
-  if (fstat(fd, &sbuf) || !S_ISREG(sbuf.st_mode) || (sbuf.st_size < 1))
-    goto out;
-  /* type of lock, if any, is not standardized on Linux */
-  if (opt_lock && !has_flock(fd) && !has_fcntl(fd))
-    goto out;
+  if (fd = open(opt_pidfile, O_RDONLY | O_NOCTTY | O_NONBLOCK), fd < 0)  return NULL;
+  if (fstat(fd, &sbuf) || !S_ISREG(sbuf.st_mode) || (sbuf.st_size < 1))  goto out;
+  if (opt_lock && !has_flock(fd) && !has_fcntl(fd))                      goto out;
   memset(buf,'\0', sizeof(buf));
-  n = read(fd,buf + 1, sizeof(buf) - 2);
+  n = read(fd, buf + 1, sizeof(buf) - 2);
   if (n < 1)
     goto out;
   pid = (pid_t)strtoul(buf + 1, &endp, 10);
-  if ((endp <= buf + 1) || (pid < 1) || (pid > 0x7fffffff))
-    goto out;
-  if (*endp && !isspace(*endp))
-    goto out;
+  if ((endp <= buf + 1) || (pid < 1) || (pid > 0x7fffffff))  goto out;
+  if (*endp && !isspace(*endp))                              goto out;
   list = xmalloc(2 * sizeof(*list));
   list[0].num = 1;
   list[1].num = pid;
  out:
   close(fd);
- just_ret:
   return list;
 }
 
@@ -446,15 +438,15 @@ static regex_t* do_regcomp(void)
 
 static struct el* select_procs(size_t* num)
 {
-  PROCTAB* ptp;
-  proc_t task;
-  unsigned long long saved_start_time; /* for new/old support */
-  pid_t saved_pid = 0; /* for new/old support */
+  struct el* list = NULL;
+  pid_t myself = getpid();
   size_t matches = 0;
   size_t size = 0;
+  pid_t saved_pid = 0; /* for new/old support */
+  unsigned long long saved_start_time; /* for new/old support */
+  PROCTAB* ptp;
+  proc_t task;
   regex_t* preg;
-  pid_t myself = getpid();
-  struct el* list = NULL;
   char cmdline[CMDSTRSIZE];
   char cmdsearch[CMDSTRSIZE];
   char cmdoutput[CMDSTRSIZE];
