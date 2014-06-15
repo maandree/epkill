@@ -65,7 +65,6 @@ static int opt_exact = 0;
 static int opt_count = 0;
 static int opt_signal = SIGTERM;
 static int opt_lock = 0;
-static int opt_case = 0;
 static int opt_echo = 0;
 static int opt_threads = 0;
 static pid_t opt_ns_pid = 0;
@@ -235,7 +234,7 @@ static struct el* read_pidfile(void)
   if (fstat(fd, &sbuf) || !S_ISREG(sbuf.st_mode) || (sbuf.st_size < 1))
     goto out;
   /* type of lock, if any, is not standardized on Linux */
-  if(opt_lock && !has_flock(fd) && !has_fcntl(fd))
+  if (opt_lock && !has_flock(fd) && !has_fcntl(fd))
     goto out;
   memset(buf,'\0', sizeof(buf));
   n = read(fd,buf + 1, sizeof(buf) - 2);
@@ -369,7 +368,6 @@ static void output_numlist(const struct el* restrict list, int num)
 
 static void output_strlist(const struct el* restrict list, int num)
 {
-  /* FIXME: escape codes */
   const char* delim = opt_delim;
   long i;
   for (i = 0; i < num; i++)
@@ -399,48 +397,52 @@ static PROCTAB* do_openproc(void)
       long i = num;
       uid_t* uids = xmalloc((size_t)num * sizeof(uid_t));
       while (i-- > 0)
-	uids[i] = (uid_t)(opt_euid[i+1].num);
+	uids[i] = (uid_t)(opt_euid[i + 1].num);
       flags |= PROC_UID;
       ptp = openproc(flags, uids, num);
     }
   else
-      ptp = openproc(flags);
+    ptp = openproc(flags);
   return ptp;
 }
+
 
 static regex_t* do_regcomp(void)
 {
   regex_t* preg = NULL;
+  char* re;
+  char errbuf[256];
+  int re_err;
   
-  if (opt_pattern)
+  if (!opt_pattern)
+    return prep;
+  
+  
+  preg = xmalloc(sizeof(regex_t));
+  if (opt_exact)
     {
-      char* re;
-      char errbuf[256];
-      int re_err;
-      
-      preg = xmalloc(sizeof(regex_t));
-      if (opt_exact)
-	{
-	  re = xmalloc(strlen(opt_pattern) + 5);
-	  sprintf(re, "^(%s)$", opt_pattern);
-	}
-      else
-	re = opt_pattern;
-    
-      re_err = regcomp(preg, re, REG_EXTENDED | REG_NOSUB | opt_case);
-      
-      if (opt_exact)
-	free(re);
-      
-      if (re_err)
-	{
-	  regerror(re_err, preg, errbuf, sizeof(errbuf));
-	  fputs(errbuf, stderr);
-	  exit(EXIT_FAILURE);
-	}
+      re = xmalloc(strlen(opt_pattern) + 5);
+      sprintf(re, "^(%s)$", opt_pattern);
     }
+  else
+    re = opt_pattern;
+  
+  re_err = regcomp(preg, re, REG_EXTENDED | REG_NOSUB);
+  
+  if (opt_exact)
+    free(re);
+  
+  if (re_err)
+    {
+      regerror(re_err, preg, errbuf, sizeof(errbuf));
+      fprintf(stderr, "%s: ", execname);
+      fputs(errbuf, stderr);
+      exit(EXIT_FAILURE);
+    }
+  
   return preg;
 }
+
 
 static struct el* select_procs(size_t* num)
 {
@@ -603,6 +605,7 @@ static struct el* select_procs(size_t* num)
   return list;
 }
 
+
 static int signal_option(int* argc, char** argv)
 {
   int i, sig;
@@ -622,6 +625,7 @@ static int signal_option(int* argc, char** argv)
   return -1;
 }
 
+
 static void parse_opts(int argc, char** argv)
 {
   int have_criterion = 0;
@@ -633,12 +637,10 @@ static void parse_opts(int argc, char** argv)
   
   i_am_epkill = strstr(execname, "kill") != NULL;
   
-  args_init(i_am_epkill ? (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes")
-			   ? _("epkill with display isolation")
-			   : _("pkill with environment constraints"))
-	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")
-			   ? _("epgrep with display isolation")
-			   : _("pgrep with environment constraints")),
+  args_init(i_am_epkill ? (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes")  ? _("epkill with display isolation")
+			                                              : _("pkill with environment constraints"))
+	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")  ? _("epgrep with display isolation")
+			                                              : _("pgrep with environment constraints")),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   if (i_am_epkill)
@@ -701,28 +703,28 @@ static void parse_opts(int argc, char** argv)
 #define optarg               (args_opts_get(opt)[0])
   
   if (kill_opts_used("-e"))  opt_echo = 1;
-  if (univ_opts_used("-F"))  criteria, opt_pidfile = xstrdup(optarg);
-  if (univ_opts_used("-G"))  criteria, opt_rgid = split_list(optarg, conv_gid);
+  if (univ_opts_used("-F"))  ((criteria)), opt_pidfile = xstrdup(optarg);
+  if (univ_opts_used("-G"))  ((criteria)), opt_rgid = split_list(optarg, conv_gid);
   if (univ_opts_used("-L"))  opt_lock = 1;
-  if (univ_opts_used("-P"))  criteria, opt_ppid = split_list(optarg, conv_num);
-  if (univ_opts_used("-U"))  criteria, opt_ruid = split_list(optarg, conv_uid);
+  if (univ_opts_used("-P"))  ((criteria)), opt_ppid = split_list(optarg, conv_num);
+  if (univ_opts_used("-U"))  ((criteria)), opt_ruid = split_list(optarg, conv_uid);
   if (univ_opts_used("-c"))  opt_count = 1;
   if (grep_opts_used("-d"))  opt_delim = xstrdup(optarg);
   if (univ_opts_used("-f"))  opt_full = 1;
-  if (univ_opts_used("-g"))  criteria, opt_pgrp = split_list(optarg, conv_pgrp);
+  if (univ_opts_used("-g"))  ((criteria)), opt_pgrp = split_list(optarg, conv_pgrp);
   if (grep_opts_used("-l"))  opt_long = 1;
   if (grep_opts_used("-a"))  opt_longlong = 1;
-  if (univ_opts_used("-n"))  criteria, opt_newest = 1;
-  if (univ_opts_used("-o"))  criteria, opt_oldest = 1;
-  if (univ_opts_used("-s"))  criteria, opt_sid = split_list(optarg, conv_sid);
-  if (univ_opts_used("-t"))  criteria, opt_term = split_list(optarg, conv_str);
-  if (univ_opts_used("-u"))  criteria, opt_euid = split_list(optarg, conv_uid);
-  if (grep_opts_used("-v"))  criteria, opt_negate = 1;
+  if (univ_opts_used("-n"))  ((criteria)), opt_newest = 1;
+  if (univ_opts_used("-o"))  ((criteria)), opt_oldest = 1;
+  if (univ_opts_used("-s"))  ((criteria)), opt_sid = split_list(optarg, conv_sid);
+  if (univ_opts_used("-t"))  ((criteria)), opt_term = split_list(optarg, conv_str);
+  if (univ_opts_used("-u"))  ((criteria)), opt_euid = split_list(optarg, conv_uid);
+  if (grep_opts_used("-v"))  ((criteria)), opt_negate = 1;
   if (grep_opts_used("-w"))  opt_threads = 1;
   if (univ_opts_used("-x"))  opt_exact = 1;
   
   if (univ_opts_used("--ns"))
-    if (criteria, opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
+    if (((criteria)), opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
       {
 	args_help();
 	exit(EXIT_FAILURE);
@@ -738,6 +740,7 @@ static void parse_opts(int argc, char** argv)
 	opt_signal = atoi(optarg);
     }
   
+#undef optarg
 #undef criteria
 #undef grep_opts_used
 #undef kill_opts_used
@@ -803,9 +806,9 @@ int main(int argc, char** argv)
       fprintf(stdout, "%d\n", num);
     else
       if (opt_long || opt_longlong)
-	output_strlist(procs,num);
+	output_strlist(procs, num);
       else
-	output_numlist(procs,num);
+	output_numlist(procs, num);
   
   return !num;
 }
