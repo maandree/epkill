@@ -89,10 +89,10 @@ static char* pid_link(pid_t pid, const char* base_name)
 
 static void select_procs(void)
 {
+  static size_t size = 0;
   PROCTAB* ptp;
   proc_t task;
   size_t match;
-  static size_t size = 0;
   char* cmd_arg0;
   char* cmd_arg0_base;
   char* cmd_arg1;
