@@ -775,7 +775,7 @@ static void parse_opts(int argc, char** argv)
 	  criteria_count++;
 	  break;
 	case 'V':
-	  printf(EEPKILL_VERSION);
+	  printf(EPKILL_VERSION);
 	  exit(EXIT_SUCCESS);
 	  /* 'c': Solaris: match by contract ID */
 	case 'c':
