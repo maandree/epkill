@@ -50,7 +50,6 @@
 #define xrealloc  realloc
 
 #include "c.h"
-#include "fileutils.h"
 #include "nsutils.h"
 #include "nls.h"
 #include <proc/readproc.h>
@@ -915,7 +914,6 @@ int main(int argc, char** argv)
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
-  atexit(close_stdout);
   
   parse_opts(argc, argv);
   

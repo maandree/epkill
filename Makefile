@@ -44,7 +44,7 @@ bin/epkill: bin/epgrep
 	ln -sf epgrep $@
 
 
-bin/%: obj/%.o obj/fileutils.o obj/nsutils.o
+bin/%: obj/%.o obj/nsutils.o
 	mkdir -p bin
 	$(CC) $(FLAGS) $(L) -o $@ $^
 

@@ -21,7 +21,6 @@
 #include <stdio.h>
 
 #include "c.h"
-#include "fileutils.h"
 #include "nls.h"
 
 #include <proc/readproc.h>
@@ -194,7 +193,6 @@ static void add_to_omit_list(char* input_arg)
 
 static void cleanup(void)
 {
-  close_stdout();
   free(procs);
   free(omitted_procs);
   free(epidof_root);
