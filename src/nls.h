@@ -15,19 +15,19 @@
 # include <locale.h>
 #else
 # undef setlocale
-# define setlocale(Category, Locale) /* empty */
+# define setlocale(category, locale)  /* empty */
 #endif
 
 #ifdef ENABLE_NLS
 # include <libintl.h>
-# define _(Text) gettext (Text)
+# define _(text)  gettext(text)
 #else
 # undef bindtextdomain
-# define bindtextdomain(Domain, Directory) /* empty */
+# define bindtextdomain(domain, directory)  /* empty */
 # undef textdomain
-# define textdomain(Domain) /* empty */
-# define _(Text) (Text)
-#endif /* ENABLE_NLS */
+# define textdomain(domain)  /* empty */
+# define _(text)  (text)
+#endif
 
 
 #endif

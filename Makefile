@@ -23,7 +23,7 @@ WARN = -Wall -Wextra -pedantic -Wdouble-promotion -Wformat=2 -Winit-self       \
        -Wsuggest-attribute=pure -Wsuggest-attribute=format -Wnormalized=nfkc
 # -Waggregate-return -Wwrite-strings
 
-EXPORTS = -DVERSION='"$(VERSION)"' -DPACKAGE_STRING='"$(PKGNAME)"'
+EXPORTS = -DVERSION='"$(VERSION)"' -DPACKAGE='"$(PKGNAME)"'
 
 FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 $(EXPORTS) $(WARN)
 

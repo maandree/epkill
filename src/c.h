@@ -68,7 +68,7 @@ static inline char* prog_inv_sh_nm_from_file(char* f, char stripext)
 #define USAGE_VERSION         _(" -V, --version  output version information and exit\n")
 #define USAGE_MAN_TAIL(_man)  _("\nFor more details see %s.\n"), _man
 
-#define EPKILL_VERSION        _("%s from %s\n"), program_invocation_short_name, PACKAGE_STRING
+#define EPKILL_VERSION        _("%s\n"), program_invocation_short_name
 
 
 #endif
