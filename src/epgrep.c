@@ -35,6 +35,7 @@
 #include <regex.h>
 #include <errno.h>
 #include <getopt.h>
+#include <sys/file.h>
 
 /* EXIT_SUCCESS is 0 */
 /* EXIT_FAILURE is 1 */
@@ -184,9 +185,7 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
       list = NULL;
     }
   else
-    {
-      list[0].num = i;
-    }
+    list[0].num = i;
   return list;
 }
 
@@ -216,7 +215,6 @@ static int strict_atol(const char* restrict str, long* restrict value)
   return 1;
 }
 
-#include <sys/file.h>
 
 /* We try a read lock. The daemon should have a write lock.
  * Seen using flock: FreeBSD code */
@@ -421,7 +419,7 @@ static void output_strlist(const struct el* restrict list, int num)
     {
       if (i + 1 == num)
 	delim = "\n";
-      printf ("%lu %s%s", list[i].num, list[i].str, delim);
+      printf("%lu %s%s", list[i].num, list[i].str, delim);
     }
 }
 
@@ -471,17 +469,17 @@ static regex_t* do_regcomp(void)
       else
 	re = opt_pattern;
     
-    re_err = regcomp(preg, re, REG_EXTENDED | REG_NOSUB | opt_case);
-    
-    if (opt_exact)
-      free(re);
-    
-    if (re_err)
-      {
-	regerror (re_err, preg, errbuf, sizeof(errbuf));
-	fputs(errbuf,stderr);
-	exit (EXIT_USAGE);
-      }
+      re_err = regcomp(preg, re, REG_EXTENDED | REG_NOSUB | opt_case);
+      
+      if (opt_exact)
+	free(re);
+      
+      if (re_err)
+	{
+	  regerror (re_err, preg, errbuf, sizeof(errbuf));
+	  fputs(errbuf,stderr);
+	  exit (EXIT_USAGE);
+	}
     }
   return preg;
 }
@@ -494,7 +492,7 @@ static struct el* select_procs(int* num)
   pid_t saved_pid = 0; /* for new/old support */
   int matches = 0;
   int size = 0;
-  regex_t *preg;
+  regex_t* preg;
   pid_t myself = getpid();
   struct el* list = NULL;
   char cmdline[CMDSTRSIZE];
@@ -641,14 +639,8 @@ static struct el* select_procs(int* num)
 		      exit (EXIT_FATAL);
 		  }
 		if (opt_long)
-		  {
-		    list[matches].str = xstrdup (cmdoutput);
-		    list[matches++].num = subtask.XXXID;
-		  }
-		else
-		  {
-		    list[matches++].num = subtask.XXXID;
-		  }
+		  list[matches].str = xstrdup (cmdoutput);
+		list[matches++].num = subtask.XXXID;
 		memset(&subtask, 0, sizeof(subtask));
 	      }
 	  }

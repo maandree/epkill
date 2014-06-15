@@ -33,20 +33,20 @@
 #define grow_size(x)  (x * 5 / 4 + 1024)
 
 
-pid_t *procs = NULL;
+pid_t* procs = NULL;
 static int proc_count = 0;
 
-pid_t *omitted_procs = NULL;
+pid_t* omitted_procs = NULL;
 static int omit_count = 0;
 
-static char *program = NULL;
+static char* program = NULL;
 
 /* switch flags */
 static int opt_single_shot    = 0;  /* -s */
 static int opt_scripts_too    = 0;  /* -x */
 static int opt_rootdir_check  = 0;  /* -c */
 
-static char *epidof_root = NULL;
+static char* epidof_root = NULL;
 
 
 static int __attribute__((__noreturn__)) usage(int opt)
@@ -73,11 +73,9 @@ static int __attribute__((__noreturn__)) usage(int opt)
 static int is_omitted(pid_t pid)
 {
   int i;
-  
   for (i = 0; i < omit_count; i++)
     if (pid == omitted_procs[i])
       return 1;
-  
   return 0;
 }
 
@@ -120,7 +118,6 @@ static char* pid_link(pid_t pid, const char* base_name)
 	  len = 0;
 	  break;
 	}
-      
     }
   while (len == path_alloc_size);
   
@@ -248,7 +245,6 @@ static void add_to_omit_list(char* input_arg)
   
   pid_t omit_pid;
   
-  omit_str = NULL;
   omit_str = strtok(input_arg, ",;:");
   while (omit_str)
     {
@@ -362,14 +358,14 @@ int main(int argc, char** argv)
 	      if (first_pid)
 		{
 		  first_pid = 0;
-		  printf("%ld", (long) procs[i]);
+		  printf("%ld", (long)procs[i]);
 		}
 	      else
-		printf(" %ld", (long) procs[i]);
+		printf(" %ld", (long)procs[i]);
+	      
 	      if (opt_single_shot)
 		break;
 	    }
-	  
 	  proc_count = 0;
 	}
     }
