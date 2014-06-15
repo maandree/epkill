@@ -493,7 +493,7 @@ static struct el* select_procs(size_t* num)
 	    }
 	}
       if (match)
-	match = environment_test(task.XXXID);
+	match = environment_test(task.XXXID, execname);
       if (task.cmdline && (opt_longlong || opt_full))
 	{
 	  int i = 0;

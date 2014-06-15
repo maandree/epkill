@@ -28,7 +28,7 @@ static char* const environment_synopsis = 0;
 extern size_t environment_count;
 void environment_dispose(void);
 void environment_parse(int* argc, char** argv);
-int environment_test(pid_t pid);
+int environment_test(pid_t pid, char* execname);
 
 
 #endif

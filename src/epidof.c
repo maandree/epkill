@@ -158,7 +158,7 @@ static void select_procs(void)
 	  
 	  free(exe_link);
 	  
-	  if (match && environment_test(task.XXXID))
+	  if (match && environment_test(task.XXXID, *argv))
 	    {
 	      if (proc_count == size)
 		procs = xrealloc(procs, __grow(size) * sizeof(*procs));
