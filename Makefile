@@ -5,6 +5,7 @@ DATA = /share
 DATADIR = $(PREFIX)$(DATA)
 INFODIR = $(DATADIR)/info
 LICENSES = $(DATADIR)/licenses
+LOCALEDIR = $(DATADIR)/locale
 
 PKGNAME = epkill
 VERSION = 1.0
@@ -23,7 +24,7 @@ WARN = -Wall -Wextra -pedantic -Wdouble-promotion -Wformat=2 -Winit-self       \
        -Wsuggest-attribute=pure -Wsuggest-attribute=format -Wnormalized=nfkc
 # -Waggregate-return -Wwrite-strings
 
-EXPORTS = -DVERSION='"$(VERSION)"' -DPACKAGE='"$(PKGNAME)"'
+EXPORTS = -DVERSION='"$(VERSION)"' -DPACKAGE='"$(PKGNAME)"' -DLOCALEDIR='"$(LOCALEDIR)"'
 
 FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 $(EXPORTS) $(WARN)
 

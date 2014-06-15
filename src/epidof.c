@@ -19,8 +19,9 @@
  */
 #include <stdio.h>
 #include <string.h>
-
-#include "nls.h"
+#include <locale.h>
+#include <libintl.h>
+#define _  gettext
 
 #include <proc/readproc.h>
 #include <argparser.h>

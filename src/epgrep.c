@@ -31,11 +31,13 @@
 #include <grp.h>
 #include <regex.h>
 #include <sys/file.h>
+#include <locale.h>
+#include <libintl.h>
+#define _  gettext
 
 #define CMDSTRSIZE  4096
 
 #include "nsutils.h"
-#include "nls.h"
 
 #include <proc/sig.h>
 #include <proc/devname.h>
