@@ -58,8 +58,8 @@
 static int i_am_pkill = 0;
 
 struct el {
-  long	num;
-  char *	str;
+  long num;
+  char* str;
 };
 
 /* User supplied arguments */

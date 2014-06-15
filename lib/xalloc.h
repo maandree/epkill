@@ -17,7 +17,7 @@
 #include "c.h"
 
 #ifndef XALLOC_EXIT_CODE
-# define XALLOC_EXIT_CODE EXIT_FAILURE
+# define XALLOC_EXIT_CODE  EXIT_FAILURE
 #endif
 
 
