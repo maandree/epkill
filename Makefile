@@ -63,9 +63,14 @@ install-base: install-cmd install-copyright
 install-cmd: install-dpkill install-dpgrep install-dpidof
 
 .PHONY: install-epkill
-install-epkill: bin/epgrep # yes, epgrep, not epkill
+ifeq ($(EPKILL_AS_SYMLINK),y)
+install-epkill: bin/epgrep install-epgrep
+	ln -sf epgrep "$(DESTDIR)$(BINDIR)/epkill"
+else
+install-epkill: bin/epgrep
 	install -dm755 -- "$(DESTDIR)$(BINDIR)"
 	install -m755 $< -- "$(DESTDIR)$(BINDIR)/epkill"
+endif
 
 .PHONY: install-epgrep
 install-epgrep: bin/epgrep
