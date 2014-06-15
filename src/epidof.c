@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "c.h"
 #include "nls.h"
 
 #include <proc/readproc.h>
@@ -185,7 +184,10 @@ static void add_to_omit_list(char* input_arg)
 	  omitted_procs[omit_count++] = omit_pid;
 	}
       else
-	xwarnx(_("illegal omit pid value (%s)!\n"), omit_str);
+	{
+	  fprintf(stderr, _("%s: Illegal omit PID value: %s!\n"), *argv, omit_str);
+	  exit(EXIT_FAILURE);
+	}
       
       omit_str = strtok(NULL, ",");
     }

@@ -33,16 +33,8 @@
 #include <regex.h>
 #include <sys/file.h>
 
-#define EXIT_USAGE  2
-#define EXIT_FATAL  3
-
 #define CMDSTRSIZE  4096
 
-#define xstrdup   strdup
-#define xmalloc   malloc
-#define xrealloc  realloc
-
-#include "c.h"
 #include "nsutils.h"
 #include "nls.h"
 
@@ -94,8 +86,18 @@ static char* execname;
 /* by default, all namespaces will be checked */
 static int ns_flags = 0x3f;
 
+static void* new;
 
-static struct el* split_list(const char* restrict str, int (*convert)(const char*, struct el*))
+
+#define xstrdup(var)         (new =  strdup(var),       new ? new : (perror(execname),            exit(EXIT_FAILURE), NULL))
+#define xmalloc(size)        (new =  malloc(size),      new ? new : (perror(execname),            exit(EXIT_FAILURE), NULL))
+#define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(execname), free(var), exit(EXIT_FAILURE), NULL))
+#define xerror(string)       (fprintf(stderr, _("%s: %s\n"), execname, string), exit(EXIT_FAILURE))
+#define xxerror(string)      (fprintf(stderr, _("%s: %s: %s\n"), execname, string, name), exit(EXIT_FAILURE))
+
+
+
+static struct el* split_list(const char* restrict str, void (*convert)(const char*, struct el*))
 {
   char* copy;
   char* ptr;
@@ -107,7 +109,7 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
   if (str[0] == '\0')
     {
       args_help();
-      exit(EXIT_USAGE);
+      exit(EXIT_FAILURE);
       return NULL;
     }
   
@@ -126,8 +128,7 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
       if (sep_pos)
 	*sep_pos = 0;
       /* Use ++i instead of i++ because slot zero is a count */
-      if (list && !convert(ptr, &list[++i]))
-	exit(EXIT_USAGE);
+      convert(ptr, &list[++i]);
       if (sep_pos)
 	ptr = sep_pos + 1;
     }
@@ -139,7 +140,7 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
       free(list);
       list = NULL;
       args_help();
-      exit(EXIT_USAGE);
+      exit(EXIT_FAILURE);
     }
   else
     list[0].num = (long)i;
@@ -228,98 +229,70 @@ static struct el* read_pidfile(void)
   return list;
 }
 
-static int conv_uid(const char* restrict name, struct el* restrict e)
+static void conv_uid(const char* restrict name, struct el* restrict e)
 {
   struct passwd* pwd;
-  
-  if (strict_atol(name, &e->num))
-    return 1;
-  
-  pwd = getpwnam(name);
-  if (pwd == NULL)
+  if (!strict_atol(name, &e->num))
     {
-      xwarnx(_("invalid user name: %s"), name);
-      return 0;
+      if (pwd = getpwnam(name), pwd == NULL)
+	xxerror(_("Invalid user name"));
+      e->num = pwd->pw_uid;
     }
-  e->num = pwd->pw_uid;
-  return 1;
 }
 
 
-static int conv_gid(const char* restrict name, struct el* restrict e)
+static void conv_gid(const char* restrict name, struct el* restrict e)
 {
   struct group* grp;
-  
-  if (strict_atol(name, &e->num))
-    return 1;
-  
-  grp = getgrnam(name);
-  if (grp == NULL)
+  if (!strict_atol(name, &e->num))
     {
-      xwarnx(_("invalid group name: %s"), name);
-      return 0;
+      if (grp = getgrnam(name), grp == NULL)
+	xxerror(_("Invalid group name"));
+      e->num = grp->gr_gid;
     }
-  e->num = grp->gr_gid;
-  return 1;
 }
 
 
-static int conv_pgrp(const char* restrict name, struct el* restrict e)
+static void conv_pgrp(const char* restrict name, struct el* restrict e)
 {
   if (!strict_atol(name, &e->num))
-    {
-      xwarnx(_("invalid process group: %s"), name);
-      return 0;
-    }
+    xxerror(_("Invalid process group"));
   if (e->num == 0)
     e->num = getpgrp();
-  return 1;
 }
 
 
-static int conv_sid(const char* restrict name, struct el* restrict e)
+static void conv_sid(const char* restrict name, struct el* restrict e)
 {
   if (!strict_atol(name, &e->num))
-    {
-      xwarnx(_("invalid session id: %s"), name);
-      return 0;
-    }
+    xxerror(_("Invalid session id"));
   if (e->num == 0)
     e->num = getsid(0);
-  return 1;
 }
 
 
-static int conv_num(const char* restrict name, struct el* restrict e)
+static void conv_num(const char* restrict name, struct el* restrict e)
 {
   if (!strict_atol(name, &e->num))
-    {
-      xwarnx(_("not a number: %s"), name);
-      return 0;
-    }
-  return 1;
+    xxerror(_("Not a number"));
 }
 
 
-static int conv_str(const char* restrict name, struct el* restrict e)
+static void conv_str(const char* restrict name, struct el* restrict e)
 {
   e->str = xstrdup(name);
-  return 1;
 }
 
 
-static int conv_ns(const char* restrict name, struct el* restrict e)
+static void conv_ns(const char* restrict name, struct el* restrict e)
 {
-  int rc = conv_str(name, e);
   int id;
-  
+  conv_str(name, e);
   ns_flags = 0;
   id = get_ns_id(name);
   if (id == -1)
-    return 0;
+    exit(EXIT_FAILURE);
   ns_flags |= 1 << id;
-  
-  return rc;
 }
 
 static int match_numlist(long value, const struct el* restrict list)
@@ -343,7 +316,7 @@ static int match_strlist(const char* restrict value, const struct el* restrict l
     found = 0;
   else
     for (i = list[0].num; i > 0; i--)
-      if (! strcmp (list[i].str, value))
+      if (!strcmp(list[i].str, value))
 	found = 1;
   return found;
 }
@@ -437,9 +410,9 @@ static regex_t* do_regcomp(void)
       
       if (re_err)
 	{
-	  regerror (re_err, preg, errbuf, sizeof(errbuf));
-	  fputs(errbuf,stderr);
-	  exit (EXIT_USAGE);
+	  regerror(re_err, preg, errbuf, sizeof(errbuf));
+	  fputs(errbuf, stderr);
+	  exit(EXIT_FAILURE);
 	}
     }
   return preg;
@@ -469,10 +442,7 @@ static struct el* select_procs(size_t* num)
   if (opt_newest)  saved_pid = 0;
   if (opt_oldest)  saved_pid = INT_MAX;
   if (opt_ns_pid && ns_read(opt_ns_pid, &ns_task))
-    {
-      fputs(_("Error reading reference namespace information\n"), stderr);
-      exit(EXIT_FATAL);
-    }
+    xerror(_("Error reading reference namespace information."));
   
   memset(&task, 0, sizeof(task));
   while (readproc(ptp, &task))
@@ -525,19 +495,19 @@ static struct el* select_procs(size_t* num)
       if (opt_long || opt_longlong || (match && opt_pattern))
 	{
 	  if (opt_longlong && task.cmdline)
-	    strncpy (cmdoutput, cmdline, CMDSTRSIZE);
+	    strncpy(cmdoutput, cmdline, CMDSTRSIZE);
 	  else
-	    strncpy (cmdoutput, task.cmd, CMDSTRSIZE);
+	    strncpy(cmdoutput, task.cmd, CMDSTRSIZE);
 	}
     
     if (match && opt_pattern)
       {
 	if (opt_full && task.cmdline)
-	  strncpy (cmdsearch, cmdline, CMDSTRSIZE);
+	  strncpy(cmdsearch, cmdline, CMDSTRSIZE);
 	else
-	  strncpy (cmdsearch, task.cmd, CMDSTRSIZE);
+	  strncpy(cmdsearch, task.cmd, CMDSTRSIZE);
 	
-	if (regexec (preg, cmdsearch, 0, NULL, 0) != 0)
+	if (regexec(preg, cmdsearch, 0, NULL, 0) != 0)
 	  match = 0;
       }
     
@@ -566,15 +536,13 @@ static struct el* select_procs(size_t* num)
 	    size = size * 5 / 4 + 4;
 	    list = xrealloc(list, size * sizeof *list);
 	  }
-	if (list && (opt_long || opt_longlong || opt_echo))
+	if (opt_long || opt_longlong || opt_echo)
 	  {
 	    list[matches].num = task.XXXID;
 	    list[matches++].str = xstrdup(cmdoutput);
 	  }
-	else if (list)
-	  list[matches++].num = task.XXXID;
 	else
-	  xerrx(EXIT_FAILURE, _("internal error"));
+	  list[matches++].num = task.XXXID;
       
 	/* epkill does not need subtasks!
 	 * this control is still done at
@@ -583,7 +551,7 @@ static struct el* select_procs(size_t* num)
 	if (opt_threads && !i_am_epkill)
 	  {
 	    proc_t subtask;
-	    memset(&subtask, 0, sizeof (subtask));
+	    memset(&subtask, 0, sizeof(subtask));
 	    while (readtask(ptp, &task, &subtask))
 	      {
 		/* don't add redundand tasks */
@@ -594,9 +562,7 @@ static struct el* select_procs(size_t* num)
 		if (matches == size)
 		  {
 		    size = size * 5 / 4 + 4;
-		    list = realloc(list, size * sizeof(*list));
-		    if (list == NULL)
-		      exit (EXIT_FATAL);
+		    list = xrealloc(list, size * sizeof(*list));
 		  }
 		if (opt_long)
 		  list[matches].str = xstrdup(cmdoutput);
@@ -606,7 +572,7 @@ static struct el* select_procs(size_t* num)
 	  }
     }
     
-    memset(&task, 0, sizeof (task));
+    memset(&task, 0, sizeof(task));
   }
   closeproc(ptp);
   *num = matches;
@@ -724,7 +690,7 @@ static void parse_opts(int argc, char** argv)
     if (criteria, opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
       {
 	args_help();
-	exit(EXIT_USAGE);
+	exit(EXIT_FAILURE);
       }
   
   if (univ_opts_used("--nslist"))
@@ -742,31 +708,18 @@ static void parse_opts(int argc, char** argv)
 #undef kill_opts_used
   
   if (opt_oldest + opt_negate + opt_newest > 1)
-    {
-      fprintf(stderr, _("%s: -v, -n and -o are mutually exclusive options."), *argv);
-      exit(EXIT_FAILURE);
-    }
+    xerror(_("-v, -n and -o are mutually exclusive options."));
   
   if (opt_lock && !opt_pidfile)
-    xerrx(EXIT_FAILURE, _("-L without -F makes no sense\n"
-			  "Try `%s --help' for more information."), execname);
+    xerror(_("%s: -L requires -F."));
   
-  if(opt_pidfile)
-    {
-      opt_pid = read_pidfile();
-      if (!opt_pid)
-	xerrx(EXIT_FAILURE, _("pidfile not valid\n"
-			      "Try `%s --help' for more information."), execname);
-    }
+  if (opt_pidfile)
+    if (opt_pid = read_pidfile(), !opt_pid)
+      xerror(_("%s: pidfile not valid."));
   
-  if (argc - optind == 1)
-    opt_pattern = argv[optind];
-  else if (argc - optind > 1)
-    xerrx(EXIT_FAILURE, _("only one pattern can be provided\n"
-			  "Try `%s --help' for more information."), execname);
-  else if (have_criterion == 0)
-    xerrx(EXIT_FAILURE, _("no matching criteria specified\n"
-			  "Try `%s --help' for more information."), execname);
+  if      (argc - optind == 1)   opt_pattern = argv[optind];
+  else if (argc - optind > 1)    xerror(_("Only one pattern can be provided."));
+  else if (have_criterion == 0)  xerror(_("No matching criteria specified."));
 }
 
 
@@ -804,7 +757,7 @@ int main(int argc, char** argv)
 	    }
 	  if (errno == ESRCH)
 	    continue; /* gone now, which is OK */
-	  xwarn(_("killing pid %ld failed"), procs[i].num);
+	  fprintf(stderr, _("%s: Killing PID %ld failed."), execname, procs[i].num);
 	}
       if (opt_count)
 	fprintf(stdout, "%d\n", num);
