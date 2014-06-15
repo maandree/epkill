@@ -415,7 +415,7 @@ static regex_t* do_regcomp(void)
   int re_err;
   
   if (!opt_pattern)
-    return prep;
+    return preg;
   
   
   preg = xmalloc(sizeof(regex_t));
@@ -519,87 +519,65 @@ static struct el* select_procs(size_t* num)
 	}
       
       if (opt_long || opt_longlong || (match && opt_pattern))
-	{
-	  if (opt_longlong && task.cmdline)
-	    strncpy(cmdoutput, cmdline, CMDSTRSIZE);
-	  else
-	    strncpy(cmdoutput, task.cmd, CMDSTRSIZE);
-	}
-    
-    if (match && opt_pattern)
-      {
-	if (opt_full && task.cmdline)
-	  strncpy(cmdsearch, cmdline, CMDSTRSIZE);
-	else
-	  strncpy(cmdsearch, task.cmd, CMDSTRSIZE);
-	
-	if (regexec(preg, cmdsearch, 0, NULL, 0) != 0)
-	  match = 0;
-      }
-    
-    if (match ^ opt_negate)
-      {
-	if (opt_newest)
-	  {
-	    if (saved_start_time == task.start_time &&
-		saved_pid > task.XXXID)
-	      continue;
-	    saved_start_time = task.start_time;
-	    saved_pid = task.XXXID;
-	    matches = 0;
-	  }
-	if (opt_oldest)
-	  {
-	    if (saved_start_time == task.start_time &&
-		saved_pid < task.XXXID)
-	      continue;
-	    saved_start_time = task.start_time;
-	    saved_pid = task.XXXID;
-	    matches = 0;
-	  }
-	if (matches == size)
-	  {
-	    size = size * 5 / 4 + 4;
-	    list = xrealloc(list, size * sizeof *list);
-	  }
-	if (opt_long || opt_longlong || opt_echo)
-	  {
-	    list[matches].num = task.XXXID;
-	    list[matches++].str = xstrdup(cmdoutput);
-	  }
-	else
-	  list[matches++].num = task.XXXID;
+	strncpy(cmdoutput, (opt_longlong && task.cmdline) ? cmdline : task.cmd, CMDSTRSIZE);
       
-	/* epkill does not need subtasks!
-	 * this control is still done at
-	 * argparse time, but a further
-	 * control is free */
-	if (opt_threads && !i_am_epkill)
-	  {
-	    proc_t subtask;
-	    memset(&subtask, 0, sizeof(subtask));
-	    while (readtask(ptp, &task, &subtask))
-	      {
-		/* don't add redundand tasks */
-		if (task.XXXID == subtask.XXXID)
-		  continue;
-		
-		/* eventually grow output buffer */
-		if (matches == size)
-		  {
-		    size = size * 5 / 4 + 4;
-		    list = xrealloc(list, size * sizeof(*list));
-		  }
-		if (opt_long)
-		  list[matches].str = xstrdup(cmdoutput);
-		list[matches++].num = subtask.XXXID;
-		memset(&subtask, 0, sizeof(subtask));
-	      }
-	  }
+      if (match && opt_pattern)
+	{
+	  strncpy(cmdsearch, (opt_full && task.cmdline) ? cmdline : task.cmd, CMDSTRSIZE);
+	  if (regexec(preg, cmdsearch, 0, NULL, 0) != 0)
+	    match = 0;
+	}
+      
+      if (match ^ opt_negate)
+	{
+	  if (opt_newest || opt_oldest)
+	    {
+	      if ((saved_start_time == task.start_time) &&
+		  (opt_newest ? (saved_pid > task.XXXID) : (saved_pid < task.XXXID)))
+		continue;
+	      saved_start_time = task.start_time;
+	      saved_pid = task.XXXID;
+	      matches = 0;
+	    }
+	  if (matches == size)
+	    {
+	      size = size * 5 / 4 + 4;
+	      list = xrealloc(list, size * sizeof(*list));
+	    }
+	  if (opt_long || opt_longlong || opt_echo)
+	    list[matches].str = xstrdup(cmdoutput);
+	  list[matches++].num = task.XXXID;
+	  
+	  /* epkill does not need subtasks!
+	   * this control is still done at
+	   * argparse time, but a further
+	   * control is free */
+	  if (opt_threads && !i_am_epkill)
+	    {
+	      proc_t subtask;
+	      memset(&subtask, 0, sizeof(subtask));
+	      while (readtask(ptp, &task, &subtask))
+		{
+		  /* don't add redundand tasks */
+		  if (task.XXXID == subtask.XXXID)
+		    continue;
+		  
+		  /* eventually grow output buffer */
+		  if (matches == size)
+		    {
+		      size = size * 5 / 4 + 4;
+		      list = xrealloc(list, size * sizeof(*list));
+		    }
+		  if (opt_long)
+		    list[matches].str = xstrdup(cmdoutput);
+		  list[matches++].num = subtask.XXXID;
+		  memset(&subtask, 0, sizeof(subtask));
+		}
+	    }
+	}
+      
+      memset(&task, 0, sizeof(task));
     }
-    
-    memset(&task, 0, sizeof(task));
-  }
   closeproc(ptp);
   *num = matches;
   return list;
