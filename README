@@ -1,0 +1,6 @@
+epidof		pidof with environment constraints
+epgrep		pgrep with environment constraints
+epkill		pkill with environment constraints
+dpidof		epidof with display isolation
+dpgrep		epgrep with display isolation
+dpkill		epkill with display isolation
