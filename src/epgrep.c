@@ -31,7 +31,6 @@
 #include <pwd.h>
 #include <grp.h>
 #include <regex.h>
-#include <getopt.h>
 #include <sys/file.h>
 
 #define EXIT_USAGE  2
@@ -49,6 +48,7 @@
 
 #include <proc/sig.h>
 #include <proc/devname.h>
+#include <argparser.h>
 
 
 static int i_am_epkill = 0;
@@ -94,52 +94,6 @@ static char* execname;
 /* by default, all namespaces will be checked */
 static int ns_flags = 0x3f;
 
-static int __attribute__((__noreturn__)) usage(int opt)
-{
-  int err = (opt == '?');
-  FILE* fp = err ? stderr : stdout;
-  
-  fputs(USAGE_HEADER, fp);
-  fprintf(fp, _(" %s [options] <pattern>\n"), execname);
-  fputs(USAGE_OPTIONS, fp);
-  if (i_am_epkill == 0)
-    {
-      fputs(_(" -d, --delimiter <string>  specify output delimiter\n"),fp);
-      fputs(_(" -l, --list-name           list PID and process name\n"),fp);
-      fputs(_(" -v, --inverse             negates the matching\n"),fp);
-      fputs(_(" -w, --lightweight         list all TID\n"), fp);
-    }
-  if (i_am_epkill == 1)
-    {
-      fputs(_(" -<sig>, --signal <sig>    signal to send (either number or name)\n"), fp);
-      fputs(_(" -e, --echo                display what is killed\n"), fp);
-    }
-  fputs(_(" -c, --count               count of matching processes\n"), fp);
-  fputs(_(" -f, --full                use full process name to match\n"), fp);
-  fputs(_(" -g, --pgroup <PGID,...>   match listed process group IDs\n"), fp);
-  fputs(_(" -G, --group <GID,...>     match real group IDs\n"), fp);
-  fputs(_(" -n, --newest              select most recently started\n"), fp);
-  fputs(_(" -o, --oldest              select least recently started\n"), fp);
-  fputs(_(" -P, --parent <PPID,...>   match only child processes of the given parent\n"), fp);
-  fputs(_(" -s, --session <SID,...>   match session IDs\n"), fp);
-  fputs(_(" -t, --terminal <tty,...>  match by controlling terminal\n"), fp);
-  fputs(_(" -u, --euid <ID,...>       match by effective IDs\n"), fp);
-  fputs(_(" -U, --uid <ID,...>        match by real IDs\n"), fp);
-  fputs(_(" -x, --exact               match exactly with the command name\n"), fp);
-  fputs(_(" -F, --pidfile <file>      read PIDs from file\n"), fp);
-  fputs(_(" -L, --logpidfile          fail if PID file is not locked\n"), fp);
-  fputs(_(" --ns <PID>                match the processes that belong to the same\n"
-	  "                           namespace as <pid>\n"), fp);
-  fputs(_(" --nslist <ns,...>         list which namespaces will be considered for\n"
-	  "                           the --ns option.\n"
-	  "                           Available namespaces: ipc, mnt, net, pid, user, uts\n"), fp);
-  fputs(USAGE_SEPARATOR, fp);
-  fputs(USAGE_HELP, fp);
-  fputs(USAGE_VERSION, fp);
-  fprintf(fp, USAGE_MAN_TAIL("epgrep(1)"));
-  
-  exit(fp == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
-}
 
 static struct el* split_list(const char* restrict str, int (*convert)(const char*, struct el*))
 {
@@ -151,7 +105,11 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
   struct el* list = NULL;
   
   if (str[0] == '\0')
-    return NULL;
+    {
+      args_help();
+      exit(EXIT_USAGE);
+      return NULL;
+    }
   
   copy = xstrdup(str);
   ptr = copy;
@@ -180,6 +138,8 @@ static struct el* split_list(const char* restrict str, int (*convert)(const char
     {
       free(list);
       list = NULL;
+      args_help();
+      exit(EXIT_USAGE);
     }
   else
     list[0].num = (long)i;
@@ -674,183 +634,117 @@ static int signal_option(int* argc, char** argv)
 
 static void parse_opts(int argc, char** argv)
 {
-  char opts[32] = "";
-  int opt;
-  int criteria_count = 0;
+  int have_criterion = 0;
+  size_t n = strlen(_(" [options] <pattern>")) + strlen(*argv) + 1;
+  char* usage_str = alloca(n * sizeof(char));
+  char* opt;
   
-  enum
-  {
-    SIGNAL_OPTION = CHAR_MAX + 1,
-    NS_OPTION,
-    NSLIST_OPTION,
-  };
-  static const struct option longopts[] =
-    {
-      { "signal",      required_argument, NULL, SIGNAL_OPTION },
-      { "count",       no_argument,       NULL, 'c' },
-      { "delimiter",   required_argument, NULL, 'd' },
-      { "list-name",   no_argument,       NULL, 'l' },
-      { "list-full",   no_argument,       NULL, 'a' },
-      { "full",        no_argument,       NULL, 'f' },
-      { "pgroup",      required_argument, NULL, 'g' },
-      { "group",       required_argument, NULL, 'G' },
-      { "newest",      no_argument,       NULL, 'n' },
-      { "oldest",      no_argument,       NULL, 'o' },
-      { "parent",      required_argument, NULL, 'P' },
-      { "session",     required_argument, NULL, 's' },
-      { "terminal",    required_argument, NULL, 't' },
-      { "euid",        required_argument, NULL, 'u' },
-      { "uid",         required_argument, NULL, 'U' },
-      { "inverse",     no_argument,       NULL, 'v' },
-      { "lightweight", no_argument,       NULL, 'w' },
-      { "exact",       no_argument,       NULL, 'x' },
-      { "pidfile",     required_argument, NULL, 'F' },
-      { "logpidfile",  no_argument,       NULL, 'L' },
-      { "echo",        no_argument,       NULL, 'e' },
-      { "ns",          required_argument, NULL, NS_OPTION },
-      { "nslist",      required_argument, NULL, NSLIST_OPTION },
-      { "help",        no_argument,       NULL, 'h' },
-      { "version",     no_argument,       NULL, 'V' },
-      { NULL }
-    };
+  sprintf(usage_str, "%s%s", *argv, _(" [options] <pattern>"));
   
-  if (strstr(execname, "kill"))
+  i_am_epkill = strstr(execname, "kill") != NULL;
+  
+  args_init(i_am_epkill ? _("pkill with environment constraints")
+	                : _("pgrep with environment constraints"),
+	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
+  
+  if (i_am_epkill)
     {
       int sig;
-      i_am_epkill = 1;
       sig = signal_option(&argc, argv);
       if (sig > -1)
 	opt_signal = sig;
-      /* These options are for epkill only */
-      strcat(opts, "e");
+      args_add_option(args_new_argumentless(NULL,             0, "-e", "--echo",   NULL), _("Display what is killed"));
+      args_add_option(args_new_argumented  (NULL, _("SIG"),   0,       "--signal", NULL), _("Signal to send (either number or name)"));
     }
   else
-    /* These options are for epgrep only */
-    strcat(opts, "lad:vw");
-  
-  strcat(opts, "LF:cfnoxP:g:s:u:U:G:t:?Vh");
-  
-  while ((opt = getopt_long(argc, argv, opts, longopts, NULL)) != -1)
     {
-      switch (opt)
-	{
-	case SIGNAL_OPTION:
-	  opt_signal = signal_name_to_number(optarg);
-	  if (opt_signal == -1 && isdigit(optarg[0]))
-	    opt_signal = atoi(optarg);
-	  break;
-	case 'e':
-	  opt_echo = 1;
-	  break;
-	case 'F': /* FreeBSD: the arg is a file containing a PID to match */
-	  opt_pidfile = xstrdup(optarg);
-	  criteria_count++;
-	  break;
-	case 'G': /* Solaris: match rgid/rgroup */
-	  opt_rgid = split_list(optarg, conv_gid);
-	  if (opt_rgid == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 'L': /* FreeBSD: fail if pidfile (see -F) not locked */
-	  opt_lock++;
-	  break;
-	case 'P': /* Solaris: match by PPID */
-	  opt_ppid = split_list(optarg, conv_num);
-	  if (opt_ppid == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 'U': /* Solaris: match by ruid/rgroup */
-	  opt_ruid = split_list(optarg, conv_uid);
-	  if (opt_ruid == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 'V':
-	  printf("%s %s", execname, VERSION);
-	  exit(EXIT_SUCCESS);
-	case 'c':
-	  opt_count = 1;
-	  break;
-	case 'd': /* Solaris: change the delimiter */
-	  opt_delim = xstrdup(optarg);
-	  break;
-	case 'f': /* Solaris: match full process name (as in "ps -f") */
-	  opt_full = 1;
-	  break;
-	case 'g': /* Solaris: match pgrp */
-	  opt_pgrp = split_list(optarg, conv_pgrp);
-	  if (opt_pgrp == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 'l': /* Solaris: long output format (epgrep only) Should require -f for beyond argv[0] maybe? */
-	  opt_long = 1;
-	  break;
-	case 'a':
-	  opt_longlong = 1;
-	  break;
-	case 'n': /* Solaris: match only the newest */
-	  if (opt_oldest | opt_negate | opt_newest)
-	    usage(opt);
-	  opt_newest = 1;
-	  criteria_count++;
-	  break;
-	case 'o': /* Solaris: match only the oldest */
-	  if (opt_oldest | opt_negate | opt_newest)
-	    usage(opt);
-	  opt_oldest = 1;
-	  criteria_count++;
-	  break;
-	case 's': /* Solaris: match by session ID -- zero means self */
-	  opt_sid = split_list(optarg, conv_sid);
-	  if (opt_sid == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 't': /* Solaris: match by tty */
-	  opt_term = split_list(optarg, conv_str);
-	  if (opt_term == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 'u': /* Solaris: match by euid/egroup */
-	  opt_euid = split_list(optarg, conv_uid);
-	  if (opt_euid == NULL)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case 'v': /* Solaris: as in grep, invert the matching (uh... applied after selection I think) */
-	  if (opt_oldest | opt_negate | opt_newest)
-	    usage(opt);
-	  opt_negate = 1;
-	  break;
-	case 'w': /* Linux: show threads (lightweight process) too */
-	  opt_threads = 1;
-	  break;
-	case 'x': /* Solaris: use ^(regexp)$ in place of regexp (FreeBSD too) */
-	  opt_exact = 1;
-	  break;
-	case NS_OPTION:
-	  opt_ns_pid = atoi(optarg);
-	  if (opt_ns_pid == 0)
-	    usage(opt);
-	  criteria_count++;
-	  break;
-	case NSLIST_OPTION:
-	  opt_nslist = split_list(optarg, conv_ns);
-	  if (opt_nslist == NULL)
-	    usage(opt);
-	  break;
-	case 'h':
-	  usage(opt);
-	  break;
-	case '?':
-	default:
-	  usage(optopt ? optopt : opt);
-	  break;
-	}
+      args_add_option(args_new_argumented  (NULL, _("SYM"), 0, "-d", "--delimiter",   NULL), _("Specify output delimiter"));
+      args_add_option(args_new_argumentless(NULL,           0, "-l", "--list-name",   NULL), _("List PID and process name"));
+      args_add_option(args_new_argumentless(NULL,           0, "-a", "--list-full",   NULL), _("List the full command line as well as the process ID"));
+      args_add_option(args_new_argumentless(NULL,           0, "-v", "--inverse",     NULL), _("Negates the matching"));
+      args_add_option(args_new_argumentless(NULL,           0, "-w", "--lightweight", NULL), _("List all TID"));
+    }
+  args_add_option(args_new_argumentless(NULL,            0, "-c", "--count",      NULL), _("Count of matching processes"));
+  args_add_option(args_new_argumentless(NULL,            0, "-f", "--full",       NULL), _("Use full process name to match"));
+  args_add_option(args_new_argumented  (NULL, _("PGRP"), 0, "-g", "--pgroup",     NULL), _("Match listed process group ID:s"));
+  args_add_option(args_new_argumented  (NULL, _("GID"),  0, "-G", "--group",      NULL), _("Match real group ID:s"));
+  args_add_option(args_new_argumentless(NULL,            0, "-n", "--newest",     NULL), _("Select most recently started"));
+  args_add_option(args_new_argumentless(NULL,            0, "-o", "--oldest",     NULL), _("Select least recently started"));
+  args_add_option(args_new_argumented  (NULL, _("PPID"), 0, "-P", "--parent",     NULL), _("Match only child processes of the given parent"));
+  args_add_option(args_new_argumented  (NULL, _("SID"),  0, "-s", "--session",    NULL), _("Match session ID:s"));
+  args_add_option(args_new_argumented  (NULL, _("TERM"), 0, "-t", "--terminal",   NULL), _("Match by controlling terminal"));
+  args_add_option(args_new_argumented  (NULL, _("EUID"), 0, "-u", "--euid",       NULL), _("Match by effective ID:s"));
+  args_add_option(args_new_argumented  (NULL, _("UID"),  0, "-U", "--uid",        NULL), _("Match by real ID:s"));
+  args_add_option(args_new_argumentless(NULL,            0, "-x", "--exact",      NULL), _("Match exactly with the command name"));
+  args_add_option(args_new_argumented  (NULL, _("FILE"), 0, "-F", "--pidfile",    NULL), _("Read PID:s from file"));
+  args_add_option(args_new_argumentless(NULL,            0, "-L", "--logpidfile", NULL), _("Fail if PID file is not locked"));
+  args_add_option(args_new_argumented  (NULL, _("PID"),  0,       "--ns",         NULL), _("Match the processes that belong to the same namespace as <PID>"));
+  args_add_option(args_new_argumented  (NULL, _("NAME"), 0,       "--nslist",     NULL), _("List which namespaces will be considered for the --ns option\n"
+											   "Available namespaces: ipc, mnt, net, pid, user, uts"));
+  args_add_option(args_new_argumentless(NULL,            0, "-h", "--help",       NULL), _("Display this help information"));
+  args_add_option(args_new_argumentless(NULL,            0, "-V", "--version",    NULL), _("Print the name and version of this program"));
+  
+  args_parse(argc, argv);
+  
+  if (args_unrecognised_count || args_opts_used("-h"))  args_help();
+  else if (args_opts_used("-V"))                        printf("%s %s", (i_am_epkill ? "epkill" : "epgrep"), VERSION);
+  else                                                  goto cont;
+  exit(args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS);
+  return;
+ cont:
+  
+#define univ_opts_used(ARG)  (opt = ARG, args_opts_used(ARG))
+#define kill_opts_used(ARG)  ( i_am_epkill && univ_opts_used(ARG))
+#define grep_opts_used(ARG)  (!i_am_epkill && univ_opts_used(ARG))
+#define criteria             have_criterion = 1
+#define optarg               (args_opts_get(opt)[0])
+  
+  if (kill_opts_used("-e"))  opt_echo = 1;
+  if (univ_opts_used("-F"))  criteria, opt_pidfile = xstrdup(optarg);
+  if (univ_opts_used("-G"))  criteria, opt_rgid = split_list(optarg, conv_gid);
+  if (univ_opts_used("-L"))  opt_lock = 1;
+  if (univ_opts_used("-P"))  criteria, opt_ppid = split_list(optarg, conv_num);
+  if (univ_opts_used("-U"))  criteria, opt_ruid = split_list(optarg, conv_uid);
+  if (univ_opts_used("-c"))  opt_count = 1;
+  if (grep_opts_used("-d"))  opt_delim = xstrdup(optarg);
+  if (univ_opts_used("-f"))  opt_full = 1;
+  if (univ_opts_used("-g"))  criteria, opt_pgrp = split_list(optarg, conv_pgrp);
+  if (grep_opts_used("-l"))  opt_long = 1;
+  if (grep_opts_used("-a"))  opt_longlong = 1;
+  if (univ_opts_used("-n"))  criteria, opt_newest = 1;
+  if (univ_opts_used("-o"))  criteria, opt_oldest = 1;
+  if (univ_opts_used("-s"))  criteria, opt_sid = split_list(optarg, conv_sid);
+  if (univ_opts_used("-t"))  criteria, opt_term = split_list(optarg, conv_str);
+  if (univ_opts_used("-u"))  criteria, opt_euid = split_list(optarg, conv_uid);
+  if (grep_opts_used("-v"))  criteria, opt_negate = 1;
+  if (grep_opts_used("-w"))  opt_threads = 1;
+  if (univ_opts_used("-x"))  opt_exact = 1;
+  
+  if (univ_opts_used("--ns"))
+    if (criteria, opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
+      {
+	args_help();
+	exit(EXIT_USAGE);
+      }
+  
+  if (univ_opts_used("--nslist"))
+    opt_nslist = split_list(optarg, conv_ns);
+  
+  if (kill_opts_used("--signal"))
+    {
+      opt_signal = signal_name_to_number(optarg);
+      if (opt_signal == -1 && isdigit(optarg[0]))
+	opt_signal = atoi(optarg);
+    }
+  
+#undef criteria
+#undef grep_opts_used
+#undef kill_opts_used
+  
+  if (opt_oldest + opt_negate + opt_newest > 1)
+    {
+      fprintf(stderr, _("%s: -v, -n and -o are mutually exclusive options."), *argv);
+      exit(EXIT_FAILURE);
     }
   
   if (opt_lock && !opt_pidfile)
@@ -870,9 +764,15 @@ static void parse_opts(int argc, char** argv)
   else if (argc - optind > 1)
     xerrx(EXIT_FAILURE, _("only one pattern can be provided\n"
 			  "Try `%s --help' for more information."), execname);
-  else if (criteria_count == 0)
+  else if (have_criterion == 0)
     xerrx(EXIT_FAILURE, _("no matching criteria specified\n"
 			  "Try `%s --help' for more information."), execname);
+}
+
+
+static void cleanup(void)
+{
+  args_dispose();
 }
 
 
@@ -886,6 +786,7 @@ int main(int argc, char** argv)
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
+  atexit(cleanup);
   
   parse_opts(argc, argv);
   

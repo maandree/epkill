@@ -218,9 +218,9 @@ int main(int argc, char** argv_)
   
   n = (ssize_t)(strlen(_(" [options] [program...]")) + strlen(*argv) + 1);
   usage_str = alloca((size_t)n * sizeof(char));
-  sprintf(usage_str, "%s %s", *argv, _("[options] [program...]"));
+  sprintf(usage_str, "%s%s", *argv, _(" [options] [program...]"));
   
-  args_init(_("Find the PID for a process based on environment"),
+  args_init(_("pidof with environment constraints"),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   args_add_option(args_new_argumentless(NULL,           0, "-c", "--check-root",  NULL), _("Restrict to processes running under the same root"));
