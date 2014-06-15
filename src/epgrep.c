@@ -255,6 +255,7 @@ static struct el* read_pidfile(void)
   return list;
 }
 
+
 static void conv_uid(const char* restrict name, struct el* restrict e)
 {
   struct passwd* pwd;
@@ -265,7 +266,6 @@ static void conv_uid(const char* restrict name, struct el* restrict e)
       e->num = pwd->pw_uid;
     }
 }
-
 
 static void conv_gid(const char* restrict name, struct el* restrict e)
 {
@@ -278,7 +278,6 @@ static void conv_gid(const char* restrict name, struct el* restrict e)
     }
 }
 
-
 static void conv_pgrp(const char* restrict name, struct el* restrict e)
 {
   if (!strict_atol(name, &e->num))
@@ -286,7 +285,6 @@ static void conv_pgrp(const char* restrict name, struct el* restrict e)
   if (e->num == 0)
     e->num = getpgrp();
 }
-
 
 static void conv_sid(const char* restrict name, struct el* restrict e)
 {
@@ -296,19 +294,16 @@ static void conv_sid(const char* restrict name, struct el* restrict e)
     e->num = getsid(0);
 }
 
-
 static void conv_num(const char* restrict name, struct el* restrict e)
 {
   if (!strict_atol(name, &e->num))
     xxerror(_("Not a number"));
 }
 
-
 static void conv_str(const char* restrict name, struct el* restrict e)
 {
   e->str = xstrdup(name);
 }
-
 
 static void conv_ns(const char* restrict name, struct el* restrict e)
 {
@@ -320,6 +315,7 @@ static void conv_ns(const char* restrict name, struct el* restrict e)
     exit(EXIT_FAILURE);
   ns_flags |= 1 << id;
 }
+
 
 static int match_numlist(long value, const struct el* restrict list)
 {
@@ -358,6 +354,7 @@ static int match_ns(const proc_t* task, const proc_t* ns_task)
   return found;
 }
 
+
 static void output_numlist(const struct el* restrict list, int num)
 {
   const char* delim = opt_delim;
@@ -382,6 +379,7 @@ static void output_strlist(const struct el* restrict list, int num)
       printf("%lu %s%s", list[i].num, list[i].str, delim);
     }
 }
+
 
 static PROCTAB* do_openproc(void)
 {
