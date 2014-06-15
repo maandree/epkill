@@ -4,8 +4,8 @@ BINDIR = $(PREFIX)$(BIN)
 DATA = /share
 DATADIR = $(PREFIX)$(DATA)
 INFODIR = $(DATADIR)/info
-LICENSES = $(DATADIR)/licenses
 LOCALEDIR = $(DATADIR)/locale
+LICENSEDIR = $(DATADIR)/licenses
 
 PKGNAME = epkill
 VERSION = 1.0
@@ -51,6 +51,72 @@ bin/%: obj/%.o obj/environment.o
 obj/%.o: src/%.c src/*.h
 	mkdir -p obj
 	$(CC) $(FLAGS) -c -o $@ $<
+
+
+.PHONY: install
+install: install-base
+
+.PHONY: install-base
+install-base: install-cmd install-copyright
+
+.PHONY: install-cmd
+install-cmd: install-dpkill install-dpgrep install-dpidof
+
+.PHONY: install-epkill
+install-epkill: bin/epgrep # yes, epgrep, not epkill
+	install -dm755 -- "$(DESTDIR)$(BINDIR)"
+	install -m755 $< -- "$(DESTDIR)$(BINDIR)/epkill"
+
+.PHONY: install-epgrep
+install-epgrep: bin/epgrep
+	install -dm755 -- "$(DESTDIR)$(BINDIR)"
+	install -m755 $< -- "$(DESTDIR)$(BINDIR)/epgrep"
+
+.PHONY: install-epidof
+install-epidof: bin/epidof
+	install -dm755 -- "$(DESTDIR)$(BINDIR)"
+	install -m755 $< -- "$(DESTDIR)$(BINDIR)/epidof"
+
+.PHONY: install-dpkill
+install-dpkill: src/dpkill install-epkill
+	install -dm755 -- "$(DESTDIR)$(BINDIR)"
+	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpkill"
+
+.PHONY: install-dpgrep
+install-dpgrep: src/dpgrep install-epgrep
+	install -dm755 -- "$(DESTDIR)$(BINDIR)"
+	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpgrep"
+
+.PHONY: install-dpidof
+install-dpidof: src/dpidof install-epidof
+	install -dm755 -- "$(DESTDIR)$(BINDIR)"
+	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpidof"
+
+.PHONY: install-copyright
+install-copyright: install-copying install-license
+
+.PHONY: install-copying
+install-copying: COPYING
+	install -dm755 -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)"
+	install -dm755 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
+
+.PHONY: install-license
+install-license: LICENSE
+	install -dm755 -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)"
+	install -dm755 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
+
+
+.PHONY: uninstall
+uninstall:
+	-rm -- "$(DESTDIR)$(BINDIR)/dpidof"
+	-rm -- "$(DESTDIR)$(BINDIR)/dpgrep"
+	-rm -- "$(DESTDIR)$(BINDIR)/dpkill"
+	-rm -- "$(DESTDIR)$(BINDIR)/epidof"
+	-rm -- "$(DESTDIR)$(BINDIR)/epgrep"
+	-rm -- "$(DESTDIR)$(BINDIR)/epkill"
+	-rm -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/LICENSE"
+	-rm -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/COPYING"
+	-rmdir -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)"
 
 
 .PHONY: clean
