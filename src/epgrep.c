@@ -37,8 +37,6 @@
 
 #define CMDSTRSIZE  4096
 
-#include "nsutils.h"
-
 #include <proc/sig.h>
 #include <proc/devname.h>
 #include <argparser.h>
@@ -96,6 +94,30 @@ static void* new;
 #define xerror(string)       (fprintf(stderr, _("%s: %s\n"), execname, string), exit(EXIT_FAILURE))
 #define xxerror(string)      (fprintf(stderr, _("%s: %s: %s\n"), execname, string, name), exit(EXIT_FAILURE))
 
+
+
+/* we need to fill in only namespace information */
+static int ns_read(pid_t pid, proc_t* ns_task)
+{
+  struct stat attr;
+  char pathname[50];
+  int i;
+  
+  for (i = 0; i < NUM_NS; i++)
+    {
+      sprintf(pathname, "/proc/%i/ns/%s", pid, get_ns_name(i));
+      if (stat(pathname, &attr))
+	{
+	  if (errno != ENOENT)
+	    return -1;
+	  ns_task->ns[i] = 0;
+	}
+      else
+	ns_task->ns[i] = (long int)attr.st_ino;
+    }
+  
+  return 0;
+}
 
 
 static struct el* split_list(const char* restrict str, void (*convert)(const char*, struct el*))
