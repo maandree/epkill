@@ -1,0 +1,22 @@
+RUNTIME DEPENDENCIES
+
+  glibc
+  procps-ng
+  argparser
+
+
+BUILD DEPENDENCIES
+
+  glibc
+  procps-ng
+  argparser
+  gcc
+  make
+  coreutils
+
+
+INSTALL DEPENDENCIES
+
+  make
+  coreutils
+
