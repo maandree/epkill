@@ -315,7 +315,7 @@ static int conv_pgrp(const char* restrict name, struct el* restrict e)
       return 0;
     }
   if (e->num == 0)
-    e->num = getpgrp ();
+    e->num = getpgrp();
   return 1;
 }
 
@@ -328,7 +328,7 @@ static int conv_sid(const char* restrict name, struct el* restrict e)
       return 0;
     }
   if (e->num == 0)
-    e->num = getsid (0);
+    e->num = getsid(0);
   return 1;
 }
 
@@ -410,7 +410,7 @@ static void output_numlist(const struct el* restrict list, int num)
     {
       if (i + 1 == num)
 	delim = "\n";
-      printf ("%ld%s", list[i].num, delim);
+      printf("%ld%s", list[i].num, delim);
     }
 }
 
@@ -936,15 +936,14 @@ int main(int argc, char** argv)
 	fprintf(stdout, "%d\n", num);
     }
   else
-    {
-      if (opt_count)
-	fprintf(stdout, "%d\n", num);
+    if (opt_count)
+      fprintf(stdout, "%d\n", num);
+    else
+      if (opt_long || opt_longlong)
+	output_strlist(procs,num);
       else
-	if (opt_long || opt_longlong)
-	  output_strlist(procs,num);
-	else
-	  output_numlist(procs,num);
-    }
+	output_numlist(procs,num);
+  
   return !num; /* exit(EXIT_SUCCESS) if match, otherwise exit(EXIT_FAILURE) */
 }
 
