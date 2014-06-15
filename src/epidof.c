@@ -1,5 +1,5 @@
 /*
- * pidof.c - Utility for listing pids of running processes
+ * epidof.c - Utility for listing pids of running processes
  *
  * Copyright (C) 2013  Jaromir Capik <jcapik@redhat.com>
  *
@@ -46,7 +46,7 @@ static int opt_single_shot    = 0;  /* -s */
 static int opt_scripts_too    = 0;  /* -x */
 static int opt_rootdir_check  = 0;  /* -c */
 
-static char *pidof_root = NULL;
+static char *epidof_root = NULL;
 
 
 static int __attribute__((__noreturn__)) usage(int opt)
@@ -64,7 +64,7 @@ static int __attribute__((__noreturn__)) usage(int opt)
   fputs(USAGE_SEPARATOR, fp);
   fputs(USAGE_HELP, fp);
   fputs(USAGE_VERSION, fp);
-  fprintf(fp, USAGE_MAN_TAIL("pidof(1)"));
+  fprintf(fp, USAGE_MAN_TAIL("epidof(1)"));
   
   exit(fp == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
@@ -157,7 +157,7 @@ static void select_procs(void)
 	{
 	  /* get the /proc/<pid>/root symlink value */
 	  root_link = pid_link(task.XXXID, "root");
-	  match = !strcmp(pidof_root, root_link);
+	  match = !strcmp(epidof_root, root_link);
 	  free(root_link);
 	  
 	  if (!match) /* root check failed */
@@ -326,7 +326,7 @@ int main(int argc, char** argv)
 	  if (geteuid() == 0)
 	    {
 	      opt_rootdir_check = 1;
-	      pidof_root = pid_link(getpid(), "root");
+	      epidof_root = pid_link(getpid(), "root");
 	    }
 	  break;
 	case 'V':
@@ -381,7 +381,7 @@ int main(int argc, char** argv)
   /* some cleaning */
   free(procs);
   free(omitted_procs);
-  free(pidof_root);
+  free(epidof_root);
   
   return !found;
 }

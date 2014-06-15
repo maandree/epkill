@@ -1,5 +1,5 @@
 /*
- * pgrep/pkill -- utilities to filter the process table
+ * epgrep/epkill -- utilities to filter the process table
  *
  * Copyright 2000 Kjetil Torgrim Homme <kjetilho@ifi.uio.no>
  * Changes by Albert Cahalan, 2002,2006.
@@ -55,7 +55,7 @@
 #include <proc/sysinfo.h>
 #include <proc/version.h> /* procps_version */
 
-static int i_am_pkill = 0;
+static int i_am_epkill = 0;
 
 struct el
 {
@@ -104,14 +104,14 @@ static int __attribute__((__noreturn__)) usage(int opt)
   fputs(USAGE_HEADER, fp);
   fprintf(fp, _(" %s [options] <pattern>\n"), program_invocation_short_name);
   fputs(USAGE_OPTIONS, fp);
-  if (i_am_pkill == 0)
+  if (i_am_epkill == 0)
     {
       fputs(_(" -d, --delimiter <string>  specify output delimiter\n"),fp);
       fputs(_(" -l, --list-name           list PID and process name\n"),fp);
       fputs(_(" -v, --inverse             negates the matching\n"),fp);
       fputs(_(" -w, --lightweight         list all TID\n"), fp);
     }
-  if (i_am_pkill == 1)
+  if (i_am_epkill == 1)
     {
       fputs(_(" -<sig>, --signal <sig>    signal to send (either number or name)\n"), fp);
       fputs(_(" -e, --echo                display what is killed\n"), fp);
@@ -138,7 +138,7 @@ static int __attribute__((__noreturn__)) usage(int opt)
   fputs(USAGE_SEPARATOR, fp);
   fputs(USAGE_HELP, fp);
   fputs(USAGE_VERSION, fp);
-  fprintf(fp, USAGE_MAN_TAIL("pgrep(1)"));
+  fprintf(fp, USAGE_MAN_TAIL("epgrep(1)"));
   
   exit(fp == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
@@ -618,11 +618,11 @@ static struct el* select_procs(int* num)
 	else
 	  xerrx(EXIT_FAILURE, _("internal error"));
       
-	/* pkill does not need subtasks!
+	/* epkill does not need subtasks!
 	 * this control is still done at
 	 * argparse time, but a further
 	 * control is free */
-	if (opt_threads && !i_am_pkill)
+	if (opt_threads && !i_am_epkill)
 	  {
 	    proc_t subtask;
 	    memset(&subtask, 0, sizeof (subtask));
@@ -722,18 +722,18 @@ static void parse_opts(int argc, char** argv)
       { NULL }
     };
   
-  if (strstr(program_invocation_short_name, "pkill"))
+  if (strstr(program_invocation_short_name, "epkill"))
     {
       int sig;
-      i_am_pkill = 1;
+      i_am_epkill = 1;
       sig = signal_option(&argc, argv);
       if (sig > -1)
 	opt_signal = sig;
-      /* These options are for pkill only */
+      /* These options are for epkill only */
       strcat(opts, "e");
     }
   else
-    /* These options are for pgrep only */
+    /* These options are for epgrep only */
     strcat(opts, "lad:vw");
   
   strcat(opts, "LF:cfnoxP:g:s:u:U:G:t:?Vh");
@@ -783,7 +783,7 @@ static void parse_opts(int argc, char** argv)
 	  criteria_count++;
 	  break;
 	case 'V':
-	  printf(EPKILL_VERSION);
+	  printf(EEPKILL_VERSION);
 	  exit(EXIT_SUCCESS);
 	  /* 'c': Solaris: match by contract ID */
 	case 'c':
@@ -807,7 +807,7 @@ static void parse_opts(int argc, char** argv)
 	   *   opt_case = REG_ICASE;
 	   *   break; */
 	  /* 'j': FreeBSD: restricted to the given jail ID */
-	case 'l': /* Solaris: long output format (pgrep only) Should require -f for beyond argv[0] maybe? */
+	case 'l': /* Solaris: long output format (epgrep only) Should require -f for beyond argv[0] maybe? */
 	  opt_long = 1;
 	  break;
 	case 'a':
@@ -919,7 +919,7 @@ int main(int argc, char** argv)
   parse_opts(argc, argv);
   
   procs = select_procs (&num);
-  if (i_am_pkill)
+  if (i_am_epkill)
     {
       int i;
       for (i = 0; i < num; i++)
