@@ -328,6 +328,7 @@ int main(int argc, char** argv)
   free(procs);
   free(omitted_procs);
   free(epidof_root);
+  args_dispose();
   
   return !found;
 }
