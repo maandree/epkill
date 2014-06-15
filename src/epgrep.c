@@ -717,9 +717,10 @@ static void parse_opts(int argc, char** argv)
     if (opt_pid = read_pidfile(), !opt_pid)
       xerror(_("%s: pidfile not valid."));
   
-  if      (argc - optind == 1)   opt_pattern = argv[optind];
-  else if (argc - optind > 1)    xerror(_("Only one pattern can be provided."));
-  else if (have_criterion == 0)  xerror(_("No matching criteria specified."));
+  
+  if      (args_files_count == 1)  opt_pattern = *args_files;
+  else if (args_files_count > 1)   xerror(_("Only one pattern can be provided."));
+  else if (have_criterion == 0)    xerror(_("No matching criteria specified."));
 }
 
 
