@@ -29,6 +29,8 @@
 #include <proc/readproc.h>
 #include <argparser.h>
 
+#include "environment.h"
+
 
 pid_t* procs = NULL;
 static size_t proc_count = 0;
@@ -156,7 +158,7 @@ static void select_procs(void)
 	  
 	  free(exe_link);
 	  
-	  if (match)
+	  if (match && environment_test(task.XXXID))
 	    {
 	      if (proc_count == size)
 		procs = xrealloc(procs, __grow(size) * sizeof(*procs));
@@ -204,6 +206,7 @@ static void cleanup(void)
   free(omitted_procs);
   free(epidof_root);
   args_dispose();
+  environment_dispose();
 }
 
 
@@ -229,7 +232,7 @@ int main(int argc, char** argv_)
   args_init(!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes")
 	    ? _("epidof with display isolation")
 	    : _("pidof with environment constraints"),
-	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
+	    usage_str, environment_synopsis, 0, 1, 0, args_standard_abbreviations);
   
   args_add_option(args_new_argumentless(NULL,           0, "-c", "--check-root",  NULL), _("Restrict to processes running under the same root"));
   args_add_option(args_new_argumentless(NULL,           0, "-s", "--single-shot", NULL), _("Return only one process ID"));
@@ -238,6 +241,7 @@ int main(int argc, char** argv_)
   args_add_option(args_new_argumentless(NULL,           0, "-h", "--help",        NULL), _("Display this help information"));
   args_add_option(args_new_argumentless(NULL,           0, "-V", "--version",     NULL), _("Print the name and version of this program"));
   
+  environment_parse(&argc, argv);
   args_parse(argc, argv);
   
   if (args_unrecognised_count || args_opts_used("-h"))  args_help();

@@ -44,11 +44,11 @@ bin/epkill: bin/epgrep
 	mkdir -p bin
 	ln -sf epgrep $@
 
-bin/%: obj/%.o
+bin/%: obj/%.o obj/environment.o
 	mkdir -p bin
 	$(CC) $(FLAGS) $(L) -o $@ $^
 
-obj/%.o: src/%.c
+obj/%.o: src/%.c src/*.h
 	mkdir -p obj
 	$(CC) $(FLAGS) -c -o $@ $<
 

@@ -44,6 +44,8 @@
 #include <proc/devname.h>
 #include <argparser.h>
 
+#include "environment.h"
+
 
 static int i_am_epkill = 0;
 
@@ -346,10 +348,10 @@ static int match_ns(const proc_t* task, const proc_t* ns_task)
 }
 
 
-static void output_numlist(const struct el* restrict list, int num)
+static void output_numlist(const struct el* restrict list, size_t num)
 {
   const char* delim = opt_delim;
-  long i;
+  size_t i;
   for (i = 0; i < num; i++)
     {
       if (i + 1 == num)
@@ -358,10 +360,10 @@ static void output_numlist(const struct el* restrict list, int num)
     }
 }
 
-static void output_strlist(const struct el* restrict list, int num)
+static void output_strlist(const struct el* restrict list, size_t num)
 {
   const char* delim = opt_delim;
-  long i;
+  size_t i;
   for (i = 0; i < num; i++)
     {
       if (i + 1 == num)
@@ -490,6 +492,8 @@ static struct el* select_procs(size_t* num)
 	      match = match_strlist(tty, opt_term);
 	    }
 	}
+      if (match)
+	match = environment_test(task.XXXID);
       if (task.cmdline && (opt_longlong || opt_full))
 	{
 	  int i = 0;
@@ -598,7 +602,7 @@ static int signal_option(int* argc, char** argv)
 
 static void parse_opts(int argc, char** argv)
 {
-  int have_criterion = 0;
+  int have_criterion = environment_count ? 0 : 1;
   size_t n = strlen(_(" [options] <pattern>")) + strlen(*argv) + 1;
   char* usage_str = alloca(n * sizeof(char));
   char* opt;
@@ -611,7 +615,7 @@ static void parse_opts(int argc, char** argv)
 			                                              : _("pkill with environment constraints"))
 	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")  ? _("epgrep with display isolation")
 			                                              : _("pgrep with environment constraints")),
-	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
+	    usage_str, environment_synopsis, 0, 1, 0, args_standard_abbreviations);
   
   if (i_am_epkill)
     {
@@ -735,13 +739,14 @@ static void parse_opts(int argc, char** argv)
 static void cleanup(void)
 {
   args_dispose();
+  environment_dispose();
 }
 
 
 int main(int argc, char** argv)
 {
   struct el* procs;
-  int num;
+  size_t num;
   
   execname = *argv;
   
@@ -750,12 +755,13 @@ int main(int argc, char** argv)
   textdomain(PACKAGE);
   atexit(cleanup);
   
+  environment_parse(&argc, argv);
   parse_opts(argc, argv);
   
   procs = select_procs(&num);
   if (i_am_epkill)
     {
-      int i;
+      size_t i;
       for (i = 0; i < num; i++)
 	{
 	  if (kill((pid_t)(procs[i].num), opt_signal) != -1)
@@ -769,11 +775,11 @@ int main(int argc, char** argv)
 	  fprintf(stderr, _("%s: Killing PID %ld failed."), execname, procs[i].num);
 	}
       if (opt_count)
-	fprintf(stdout, "%d\n", num);
+	fprintf(stdout, "%lu\n", num);
     }
   else
     if (opt_count)
-      fprintf(stdout, "%d\n", num);
+      fprintf(stdout, "%lu\n", num);
     else
       if (opt_long || opt_longlong)
 	output_strlist(procs, num);
