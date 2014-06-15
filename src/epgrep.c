@@ -1,25 +1,24 @@
 /*
- * epgrep/epkill -- utilities to filter the process table
- *
- * Copyright 2000 Kjetil Torgrim Homme <kjetilho@ifi.uio.no>
- * Changes by Albert Cahalan, 2002,2006.
- * Changes by Roberto Polli <rpolli@babel.it>, 2012.
- *
+ * epgrep/epkill — Utilities to filter the process table
+ * 
+ * Copyright (C) 2000        Kjetil Torgrim Homme (kjetilho@ifi.uio.no)
+ * Copyright (C) 2002, 2006  Albert Cahalan
+ * Copyright (C) 2012        Roberto Polli (rpolli@babel.it)
+ * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
