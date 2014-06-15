@@ -43,6 +43,14 @@ static int opt_rootdir_check  = 0;  /* -c */
 
 static char* epidof_root = NULL;
 
+static char** argv;
+static void* new;
+
+
+#define __grow(var)          (var = var * 5 / 4 + 1024)
+#define basename(filename)   (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename)
+#define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(*argv), free(var), exit(EXIT_FAILURE), NULL))
+
 
 static int is_omitted(pid_t pid)
 {
@@ -54,9 +62,6 @@ static int is_omitted(pid_t pid)
 }
 
 
-#define basename(filename)  (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename)
-
-
 static char* pid_link(pid_t pid, const char* base_name)
 {
   size_t path_alloc_size = 0;
@@ -64,20 +69,18 @@ static char* pid_link(pid_t pid, const char* base_name)
   char* result = NULL;
   char link[PROCPATHLEN];
   
-  snprintf(link, sizeof(link), "/proc/%d/%s", pid, base_name);
+  snprintf(link, sizeof(link) / sizeof(char), "/proc/%d/%s", pid, base_name);
   
-  do
+  while ((size_t)len == path_alloc_size)
     {
-      if (len == (ssize_t)path_alloc_size)
-	result = (char*)realloc(result, path_alloc_size <<= 1);
-      
-      if ((len = readlink(link, result, path_alloc_size - 1)) < 0)
+      result = xrealloc(result, __grow(path_alloc_size));
+      len = readlink(link, result, path_alloc_size - 1);
+      if (len < 0)
 	{
 	  len = 0;
 	  break;
 	}
     }
-  while ((size_t)len == path_alloc_size);
   
   result[len] = '\0';
   return result;
@@ -91,21 +94,18 @@ static void select_procs(void)
   size_t match;
   static size_t size = 0;
   char* cmd_arg0;
-  char* cmd_arg0base;
+  char* cmd_arg0_base;
   char* cmd_arg1;
-  char* cmd_arg1base;
-  char* pos;
+  char* cmd_arg1_base;
   char* program_base;
   char* root_link;
   char* exe_link;
   char* exe_link_base;
   
-  /* get the input base name */
-  program_base = basename(program);
-  
+  program_base = basename(program);  /* get the input base name */
   ptp = openproc(PROC_FILLCOM | PROC_FILLSTAT);
-  
   memset(&task, 0, sizeof(task));
+  
   while (readproc(ptp, &task))
     {
       if (opt_rootdir_check)
@@ -130,58 +130,38 @@ static void select_procs(void)
 	  if (*cmd_arg0 == '-')
 	    cmd_arg0++;
 	  
-	  cmd_arg0base  = basename(cmd_arg0);           /* get the argv0 basename */
+	  cmd_arg0_base = basename(cmd_arg0);           /* get the argv0 basename */
 	  exe_link      = pid_link(task.XXXID, "exe");  /* get the /proc/<pid>/exe symlink value */
 	  exe_link_base = basename(exe_link);           /* get the exe_link basename */
-	  
 	  match = 0;
 	  
-	  if (!strcmp(program, cmd_arg0base) ||
-	      !strcmp(program_base, cmd_arg0) ||
-	      !strcmp(program, cmd_arg0) ||
-	      
-	      !strcmp(program, exe_link_base) ||
-	      !strcmp(program, exe_link))
+#define __test(p, c)  (!strcmp(p, c##_base) || !strcmp(p, c) || !strcmp(p##_base, c))
+	  
+	  if (__test(program, cmd_arg0) || __test(program, exe_link))
+	    match = 1;
+	  else if (opt_scripts_too && task.cmdline[1])
 	    {
-	      match = 1;
-	    }
-	  else if (opt_scripts_too && *(task.cmdline+1))
-	    {
-	      pos = cmd_arg1base = cmd_arg1 = *(task.cmdline+1);
-	      
-	      /* get the arg1 base name */
-	      while (*pos != '\0')
-		if (*(pos++) == '/')
-		  cmd_arg1base = pos;
+	      cmd_arg1 = task.cmdline[1];
+	      cmd_arg1_base = basename(cmd_arg1);
 	      
 	      /* if script, then task.cmd = argv1, otherwise task.cmd = argv0 */
-	      if (task.cmd &&
-		  !strncmp(task.cmd, cmd_arg1base, strlen(task.cmd)) &&
-		  (!strcmp(program, cmd_arg1base) ||
-		   !strcmp(program_base, cmd_arg1) ||
-		   !strcmp(program, cmd_arg1)))
-		{
-		  match = 1;
-		}
+	      if (task.cmd && !strncmp(task.cmd, cmd_arg1_base, strlen(task.cmd)) && __test(program, cmd_arg1))
+		match = 1;
 	    }
+	  
+#undef __test
 	  
 	  free(exe_link);
 	  
 	  if (match)
 	    {
 	      if (proc_count == size)
-		procs = realloc(procs, (size <<= 1) * sizeof(*procs));
-	      if (procs)
-		procs[proc_count++] = task.XXXID;
-	      else
-		xerrx(EXIT_FAILURE, _("internal error"));
+		procs = xrealloc(procs, __grow(size) * sizeof(*procs));
+	      procs[proc_count++] = task.XXXID;
 	    }
-	  
 	}
-      
       memset(&task, 0, sizeof(task));
     }
-  
   closeproc(ptp);
 }
 
@@ -193,46 +173,49 @@ static void add_to_omit_list(char* input_arg)
   char* endptr;
   pid_t omit_pid;
   
-  omit_str = strtok(input_arg, ",;:");
+  omit_str = strtok(input_arg, ",");
   while (omit_str)
     {
-      if (!strcmp(omit_str, "%PPID")) /* keeping this %PPID garbage for backward compatibility only */
-	{
-	  omit_pid = getppid(); /* ... as it can be replaced with $$ in common shells */
-	  endptr = omit_str + sizeof("%PPID") - 1;
-	}
-      else
-	omit_pid = (pid_t)strtoul(omit_str, &endptr, 10);
+      omit_pid = (pid_t)strtoul(omit_str, &endptr, 10);
       
       if (*endptr == '\0')
 	{
 	  if (omit_count == omit_size)
-	    omitted_procs = realloc(omitted_procs, (omit_size <<= 1) * sizeof(*omitted_procs));
-	  if (omitted_procs)
-	    omitted_procs[omit_count++] = omit_pid;
-	  else
-	    xerrx(EXIT_FAILURE, _("internal error"));
+	    omitted_procs = xrealloc(omitted_procs, __grow(omit_size) * sizeof(*omitted_procs));
+	  omitted_procs[omit_count++] = omit_pid;
 	}
       else
 	xwarnx(_("illegal omit pid value (%s)!\n"), omit_str);
       
-      omit_str = strtok(NULL, ",;:");
+      omit_str = strtok(NULL, ",");
     }
 }
 
 
+static void cleanup(void)
+{
+  close_stdout();
+  free(procs);
+  free(omitted_procs);
+  free(epidof_root);
+  args_dispose();
+}
 
-int main(int argc, char** argv)
+
+
+int main(int argc, char** argv_)
 {
   int found = 0;
   int first_pid = 1;
   char* usage_str;
   ssize_t i, n;
   
+  argv = argv_;
+  
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
-  atexit(close_stdout);
+  atexit(cleanup);
   
   n = (ssize_t)(strlen(_(" [options] [program...]")) + strlen(*argv) + 1);
   usage_str = alloca((size_t)n * sizeof(char));
@@ -253,7 +236,6 @@ int main(int argc, char** argv)
   if (args_unrecognised_count || args_opts_used("-h"))  args_help();
   else if (args_opts_used("-V"))                        printf("epidof " VERSION);
   else                                                  goto cont;
-  args_dispose();
   return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;
  cont:
   
@@ -292,12 +274,6 @@ int main(int argc, char** argv)
   /* final line feed */
   if (found)
     printf("\n");
-  
-  /* some cleaning */
-  free(procs);
-  free(omitted_procs);
-  free(epidof_root);
-  args_dispose();
   
   return !found;
 }
