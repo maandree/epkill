@@ -79,17 +79,14 @@ install-epidof: bin/epidof
 
 .PHONY: install-dpkill
 install-dpkill: src/dpkill install-epkill
-	install -dm755 -- "$(DESTDIR)$(BINDIR)"
 	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpkill"
 
 .PHONY: install-dpgrep
 install-dpgrep: src/dpgrep install-epgrep
-	install -dm755 -- "$(DESTDIR)$(BINDIR)"
 	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpgrep"
 
 .PHONY: install-dpidof
 install-dpidof: src/dpidof install-epidof
-	install -dm755 -- "$(DESTDIR)$(BINDIR)"
 	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpidof"
 
 .PHONY: install-copyright
