@@ -240,12 +240,9 @@ int main(int argc, char** argv_)
   
   args_parse(argc, argv);
   
-  if (args_unrecognised_count || args_opts_used("-h"))
-    args_help();
-  else if (args_opts_used("-V"))
-    printf("%s " VERSION, !strcmp(xgetenv("THIS_IS_DPIDOF"), "yes") ? "dpidof" : "epidof");
-  else                                                  
-    goto cont;
+  if (args_unrecognised_count || args_opts_used("-h"))  args_help();
+  else if (args_opts_used("-V"))                        printf("%s " VERSION, !strcmp(xgetenv("THIS_IS_DPIDOF"), "yes") ? "dpidof" : "epidof");
+  else                                                  goto cont;
   return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;
  cont:
   

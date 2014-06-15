@@ -684,12 +684,9 @@ static void parse_opts(int argc, char** argv)
     args_help();
   else if (args_opts_used("-V"))
     {
-      if (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))
-	printf("dpkill " VERSION);
-      else if (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes"))
-	printf("dpgrep " VERSION);
-      else
-	printf("%s " VERSION, i_am_epkill ? "epkill" : "epgrep");
+      if      (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))  printf("dpkill " VERSION);
+      else if (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes"))  printf("dpgrep " VERSION);
+      else                                                 printf("%s " VERSION, i_am_epkill ? "epkill" : "epgrep");
     }
   else
     goto cont;
