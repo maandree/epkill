@@ -232,7 +232,7 @@ int main(int argc, char** argv_)
   args_init(!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes")
 	    ? _("epidof with display isolation")
 	    : _("pidof with environment constraints"),
-	    usage_str, environment_synopsis, 0, 1, 0, args_standard_abbreviations);
+	    usage_str, _(environment_synopsis), 0, 1, 0, args_standard_abbreviations);
   
   args_add_option(args_new_argumentless(NULL,           0, "-c", "--check-root",  NULL), _("Restrict to processes running under the same root"));
   args_add_option(args_new_argumentless(NULL,           0, "-s", "--single-shot", NULL), _("Return only one process ID"));

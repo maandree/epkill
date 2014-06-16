@@ -615,7 +615,7 @@ static void parse_opts(int argc, char** argv)
 			                                              : _("pkill with environment constraints"))
 	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")  ? _("epgrep with display isolation")
 			                                              : _("pgrep with environment constraints")),
-	    usage_str, environment_synopsis, 0, 1, 0, args_standard_abbreviations);
+	    usage_str, _(environment_synopsis), 0, 1, 0, args_standard_abbreviations);
   
   if (i_am_epkill)
     {

@@ -30,7 +30,7 @@ typedef struct constraint
   int not;
   char* name;
   char* value;
-  size_t meet;
+  size_t met;
 } constraint_t;
 
 
@@ -107,7 +107,7 @@ void environment_parse(int* argc, char** argv)
 	  return;
 	}
       
-      constraint.meet = 0;
+      constraint.met = 0;
       constraint.not = not;
       constraint.name = var;
       constraint.value = arg;
@@ -194,7 +194,7 @@ int environment_test(pid_t pid, char* execname)
 	    if (strcmp(constraints[i].value, value))
 	      continue;
 	  
-	  constraints[i].meet = test_id;
+	  constraints[i].met = test_id;
 	}
       
     corrupt_environent:
@@ -205,7 +205,7 @@ int environment_test(pid_t pid, char* execname)
   free(old);
   
   for (i = 0; i < environment_count; i++)
-    if ((constraints[i].meet == test_id) == constraints[i].not)
+    if ((constraints[i].met == test_id) == constraints[i].not)
       return 0;
   
   return 1;
