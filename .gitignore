@@ -11,4 +11,8 @@ obj/
 *.o
 *.gch
 *.su
+*.dvi
+*.ps
+*.pdf
+*.info
 

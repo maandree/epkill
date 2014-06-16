@@ -1,0 +1,373 @@
+\input texinfo   @c -*-texinfo-*-
+
+@c %**start of header
+@setfilename epkill.info
+@settitle epkill
+@afourpaper
+@documentencoding UTF-8
+@documentlanguage en
+@finalout
+@c %**end of header
+
+
+@dircategory Utilities
+@direntry
+* epkill: (epkill).                Kill and filter processes based on their environment
+@end direntry
+
+
+@copying
+Copyright @copyright{} 2014 Mattias Andrée
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
+Texts. A copy of the license is included in the section entitled
+``GNU Free Documentation License''.
+@end quotation
+@end copying
+
+
+@ifnottex
+@node Top
+@top epkill -- Kill and filter processes based on their environment
+@insertcopying
+@end ifnottex
+
+@titlepage
+@title epkill
+@subtitle Kill and filter processes based on their environment
+@author by Mattias Andrée (maandree)
+
+@page
+@c @center `'
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+
+
+@menu
+* Overview::                        Brief overview of epkill.
+* epidof Invocation::               Invoking @command{epidof}.
+* epgrep Invocation::               Invoking @command{epgrep}.
+* epkill Invocation::               Invoking @command{epkill}.
+* GNU Free Documentation License::  Copying and sharing this manual.
+@end menu
+
+
+
+@node Overview
+@chapter Overview
+
+epkill is a collection of utilities for filtering
+and killing processes based on their name and environment.
+The epkill collection includes six utilises:
+
+@table @command
+@item epidof
+Find the process ID of a running program.
+
+@item epgrep
+Look up processes based on name and other attributes.
+
+@item epkill
+Signal processes based on name and other attributes
+
+@item dpidof
+Wraps @command{epidof} with the current display preselected.
+
+@item dpgrep
+Wraps @command{epgrep} with the current display preselected.
+
+@item dpkill
+Wraps @command{epkill} with the current display preselected.
+@end table
+
+All of these commands allow you to specify how the
+processes' environment variables must look to be included
+in the result.
+
+
+
+@node epidof Invocation
+@chapter @command{epidof} Invocation
+
+@command{epidof} finds the process ID:s (PID:s) of the named
+programs. It prints those ID:s to the standard output.
+
+@command{epidof} supports the following options, and any
+number of program names.
+
+@table @option
+@item -c
+@itemx --check-root
+Restrict returned process ID:s to programms running with the
+same root directory. This option is ignored for non-root users,
+as they will be unable to check the current root directory of
+processes they do not own.
+
+@item -s
+@itemx --single-shot
+Return only one process ID.
+
+@item -x
+@itemx --scripts
+Causes @command{epidof} to also return process ID:S of shells
+running the named scripts.
+
+@item o
+@itemx --omit-pid PID...
+Tells @command{epidof} to omit processes with the specified process ID.
+The special pid @code{%PPID} from @command{pidof} is not supported;
+if you are in a shell, @code{$$} should do the trick. This option can
+be used multiple times.
+
+@item -h
+@itemx --help
+Display this help information, except a little more concise.
+
+@item -V
+@itemx --version
+Print the name and version of the program.
+@end table
+
+
+
+@node epgrep Invocation
+@chapter @command{epgrep} Invocation
+
+@command{epgrep} looks through the currently running processes and lists
+the process ID:s which match the selection criteria.  All the criteria
+have to match.
+
+@command{epgrep} supports the following options and one extended regular
+expression for the program name of the processes to list.
+
+@table @option
+@item -d
+@itemx --delimiter DELIMITER
+Sets the string used to delimit each process ID in the output
+(by default a new line).
+
+@item -l
+@itemx --list-name
+List the process name as well as the process ID.
+
+@item -a
+@itemx --list-full
+List the command line as well as the process ID.
+
+@item -v
+@itemx --inverse
+List the process only if all criteria was not matched.
+That is, if one or more criteria was unmatched.
+
+@item -w
+@itemx --lightweight
+Shows all thread ID:s instead of PID:s.
+
+@item -c
+@itemx --count
+Suppress normal output; instead print a count of matching processes.
+When count does not match anything, for example returns zero, the
+command will return non-zero value.
+
+@item -f
+@itemx --full
+The pattern is normally only matched against the process name.
+With this option, the match is against the full command line.
+
+@item -g
+@itemx --pgroup PGRP,...
+Only match processes in the process group ID:s listed. Process
+group 0 is translated into the current process group.
+
+@item -G
+@itemx --group GID,...
+Only match processes whose real group ID is listed.
+Either the numerical or symbolical value may be used.
+
+@item -n
+@itemx --newest
+Select only the most recently started of the matching processes.
+
+@item -o
+@itemx --oldest
+Select only the least recently started of the matching processes.
+
+@item -P
+@itemx --parent PPID,...
+Only match processes whose parent process ID is listed.
+
+@item -s
+@itemx --session SID,...
+Only match processes whose process session ID is listed.
+Session ID 0 is the current session.
+
+@item -t
+@itemx --terminal TERM,...
+Only match processes whose controlling terminal is listed. The
+terminal name should be specified without the @file{/dev/} prefix.
+
+@item -u
+@itemx --euid EUID,...
+Only match processes whose effective user ID is listed.
+Either the numeri cal or symbolical value may be used.
+
+@item -U
+@itemx --uid UID,...
+Only match processes whose real user ID is listed.
+Either the numeri cal or symbolical value may be used.
+
+@item -x
+@itemx --exact
+Only match processes whose names (or command line if
+@option{-f} is  specified) exactly match the pattern.
+
+@item -F
+@itemx --pidfile FILE
+Read PID:s from file.
+
+@item -L
+@itemx --logpidfile
+Fail if file selected with @option{-F} not locked.
+
+@item --ns PID
+Match processes that belong to the same namespaces.
+Root is required to match processes from other users.
+
+@item --nslist NAME,...
+Match only the provided namespaces. Available
+namespaces: ipc, mnt, net, pid, user, uts.
+
+@item -h
+@itemx --help
+Display this help information, except a little more concise.
+
+@item -V
+@itemx --version
+Print the name and version of the program.
+@end table
+
+The options @option{-n}, @option{-o} and @option{-v} can not be combined.
+
+
+
+@node epkill Invocation
+@chapter @command{epkill} Invocation
+
+@command{epgrep} send a signal (by default SIGTERM) to currently running
+processes whose name match a pattern and have satisfactory selection criteria.
+All the criteria have to match.
+
+@command{epkill} supports the following options and one extended regular
+expression for the program name of the processes to list.
+
+@table @option
+@item -SIGNAL
+@itemx --signal SIGNAL
+Defines the signal to send to each matched process.
+Either the numeric or the symbolic signal name can be used.
+
+@item -e
+@itemx --echo
+Display what is killed.
+
+@item -c
+@itemx --count
+Suppress normal output; instead print a count of matching processes.
+When count does not match anything, for example returns zero, the
+command will return non-zero value.
+
+@item -f
+@itemx --full
+The pattern is normally only matched against the process name.
+With this option, the match is against the full command line.
+
+@item -g
+@itemx --pgroup PGRP,...
+Only match processes in the process group ID:s listed. Process
+group 0 is translated into the current process group.
+
+@item -G
+@itemx --group GID,...
+Only match processes whose real group ID is listed.
+Either the numerical or symbolical value may be used.
+
+@item -n
+@itemx --newest
+Select only the most recently started of the matching processes.
+
+@item -o
+@itemx --oldest
+Select only the least recently started of the matching processes.
+
+@item -P
+@itemx --parent PPID,...
+Only match processes whose parent process ID is listed.
+
+@item -s
+@itemx --session SID,...
+Only match processes whose process session ID is listed.
+Session ID 0 is the current session.
+
+@item -t
+@itemx --terminal TERM,...
+Only match processes whose controlling terminal is listed. The
+terminal name should be specified without the @file{/dev/} prefix.
+
+@item -u
+@itemx --euid EUID,...
+Only match processes whose effective user ID is listed.
+Either the numeri cal or symbolical value may be used.
+
+@item -U
+@itemx --uid UID,...
+Only match processes whose real user ID is listed.
+Either the numeri cal or symbolical value may be used.
+
+@item -x
+@itemx --exact
+Only match processes whose names (or command line if
+@option{-f} is  specified) exactly match the pattern.
+
+@item -F
+@itemx --pidfile FILE
+Read PID:s from file.
+
+@item -L
+@itemx --logpidfile
+Fail if file selected with @option{-F} not locked.
+
+@item --ns PID
+Match processes that belong to the same namespaces.
+Root is required to match processes from other users.
+
+@item --nslist NAME,...
+Match only the provided namespaces. Available
+namespaces: ipc, mnt, net, pid, user, uts.
+
+@item -h
+@itemx --help
+Display this help information, except a little more concise.
+
+@item -V
+@itemx --version
+Print the name and version of the program.
+@end table
+
+The options @option{-n} and @option{-o} can not be combined.
+
+
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+@include fdl.texinfo
+
+@bye
+
