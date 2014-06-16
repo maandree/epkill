@@ -34,7 +34,9 @@ static char* const environment_synopsis =
   "    true. For example, \033[4m!VAR=\033[m will pass if \033[4mVAR\033[m is not defined or is \n"
   "    non-empty. You specify multiple constraints, a process will only be\n"
   "    selected if all constraints are met. For example, \033[4m+=VAR !VAR=\033[m will\n"
-  "    pass only if \033[4mVAR\033[m is defined and is not empty.";
+  "    pass only if \033[4mVAR\033[m is defined and is not empty. If required, you can\n"
+  "    prefix the argument with an at-sign to force it to be parsed as an\n"
+  "    environment constraint if it would otherwise start with a hyphen.";
 
 
 extern size_t environment_count;

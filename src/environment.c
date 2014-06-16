@@ -50,6 +50,7 @@ void environment_dispose(void)
 void environment_parse(int* argc, char** argv)
 {
   /*
+   * @...      force parsing even if starting with -
    * =ENV      same as here
    * !=ENV     different then from here
    * ENV=VAL   is VAL
@@ -79,6 +80,12 @@ void environment_parse(int* argc, char** argv)
       
       if (strchr(arg, '=') == NULL)
 	continue;
+      
+      if (*arg == '@')
+	arg++;
+      else
+	if (*arg == '-')
+	  continue;
       
       if (*arg == '!')  not  = 1, arg++;
       if (*arg == '+')  have = 1, arg++;
