@@ -135,7 +135,7 @@ static struct el* split_list(const char* restrict str, void (*convert)(const cha
   
   if (str[0] == '\0')
     {
-      args_help();
+      args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
       exit(EXIT_FAILURE);
       return NULL;
     }
@@ -166,7 +166,7 @@ static struct el* split_list(const char* restrict str, void (*convert)(const cha
     {
       free(list);
       list = NULL;
-      args_help();
+      args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
       exit(EXIT_FAILURE);
     }
   else
@@ -615,7 +615,7 @@ static void parse_opts(int argc, char** argv)
 			                                              : _("pkill with environment constraints"))
 	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")  ? _("epgrep with display isolation")
 			                                              : _("pgrep with environment constraints")),
-	    usage_str, _(environment_synopsis), 0, 1, 0, args_standard_abbreviations);
+	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   if (i_am_epkill)
     {
@@ -657,7 +657,7 @@ static void parse_opts(int argc, char** argv)
   args_parse(argc, argv);
   
   if (args_unrecognised_count || args_opts_used("-h"))
-    args_help();
+    args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
   else if (args_opts_used("-V"))
     {
       if      (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))  printf("dpkill " VERSION);
@@ -700,7 +700,7 @@ static void parse_opts(int argc, char** argv)
   if (univ_opts_used("--ns"))
     if (((criteria)), opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
       {
-	args_help();
+	args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
 	exit(EXIT_FAILURE);
       }
   

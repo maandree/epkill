@@ -22,19 +22,19 @@
 #include <sys/types.h>
 
 
-static char* const environment_synopsis = "\n"
-  "To restrict the found processes to those that have the environment\n"
-  "variable \033[4mVAR\033[m set to \033[4mVAL\033[m, add the option \033[4mVAR=VAL\033[m. \033[4mVAL\033[m can be empty,\n"
-  "but \033[4mVAR\033[m cannot be empty. This means the \033[4mVAR=\033[m will not pass if \033[4mVAR\033[m\n"
-  "is defined, it will only pass if the value of \033[4mVAR\033[m is an empty string.\n"
-  "To select process with the same value for \033[4mVAR\033[m as the current process,\n"
-  "you can use the shorthand \033[4m=VAR\033[m. The select processes that have \033[4mVAR\033[m\n"
-  "defined, possibly empty, use \033[4m+=VAR\033[m. You can prefix any of these\n"
-  "selectors with an exclamation point, to require the it does not hold\n"
-  "true. For example, \033[4m!VAR=\033[m will pass if \033[4mVAR\033[m is not defined or is \n"
-  "non-empty. You specify multiple constraints, a process will only be\n"
-  "selected if all constraints are met. For example, \033[4m+=VAR !VAR=\033[m will\n"
-  "pass only if \033[4mVAR\033[m is defined and is not empty.";
+static char* const environment_synopsis =
+  "    To restrict the found processes to those that have the environment\n"
+  "    variable \033[4mVAR\033[m set to \033[4mVAL\033[m, add the option \033[4mVAR=VAL\033[m. \033[4mVAL\033[m can be empty,\n"
+  "    but \033[4mVAR\033[m cannot be empty. This means the \033[4mVAR=\033[m will not pass if \033[4mVAR\033[m\n"
+  "    is defined, it will only pass if the value of \033[4mVAR\033[m is an empty string.\n"
+  "    To select process with the same value for \033[4mVAR\033[m as the current process,\n"
+  "    you can use the shorthand \033[4m=VAR\033[m. The select processes that have \033[4mVAR\033[m\n"
+  "    defined, possibly empty, use \033[4m+=VAR\033[m. You can prefix any of these\n"
+  "    selectors with an exclamation point, to require the it does not hold\n"
+  "    true. For example, \033[4m!VAR=\033[m will pass if \033[4mVAR\033[m is not defined or is \n"
+  "    non-empty. You specify multiple constraints, a process will only be\n"
+  "    selected if all constraints are met. For example, \033[4m+=VAR !VAR=\033[m will\n"
+  "    pass only if \033[4mVAR\033[m is defined and is not empty.";
 
 
 extern size_t environment_count;

@@ -232,7 +232,7 @@ int main(int argc, char** argv_)
   args_init(!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes")
 	    ? _("epidof with display isolation")
 	    : _("pidof with environment constraints"),
-	    usage_str, _(environment_synopsis), 0, 1, 0, args_standard_abbreviations);
+	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   args_add_option(args_new_argumentless(NULL,           0, "-c", "--check-root",  NULL), _("Restrict to processes running under the same root"));
   args_add_option(args_new_argumentless(NULL,           0, "-s", "--single-shot", NULL), _("Return only one process ID"));
@@ -244,7 +244,7 @@ int main(int argc, char** argv_)
   environment_parse(&argc, argv);
   args_parse(argc, argv);
   
-  if (args_unrecognised_count || args_opts_used("-h"))  args_help();
+  if (args_unrecognised_count || args_opts_used("-h"))  args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
   else if (args_opts_used("-V"))                        printf("%s " VERSION, !strcmp(xgetenv("THIS_IS_DPIDOF"), "yes") ? "dpidof" : "epidof");
   else                                                  goto cont;
   return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;
