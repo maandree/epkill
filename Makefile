@@ -3,6 +3,7 @@ BIN = /bin
 BINDIR = $(PREFIX)$(BIN)
 DATA = /share
 DATADIR = $(PREFIX)$(DATA)
+DOCDIR = $(DATADIR)/doc
 INFODIR = $(DATADIR)/info
 LOCALEDIR = $(DATADIR)/locale
 LICENSEDIR = $(DATADIR)/licenses
@@ -31,14 +32,24 @@ FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 $(EXPORTS) $(WARN)
 L = $$(pkg-config --libs libprocps) -largparser
 
 
+
 .PHONY: all
-all: epkill epgrep epidof
+default: cmd info
+
+.PHONY: all
+all: cmd doc
+
+.PHONY: base
+base: cmd
+
+
+.PHONY: cmd
+cmd: epkill epgrep epidof
 
 .PHONY: epkill epgrep epidof
 epkill: bin/epkill
 epgrep: bin/epgrep
 epidof: bin/epidof
-
 
 bin/epkill: bin/epgrep
 	mkdir -p bin
@@ -53,14 +64,49 @@ obj/%.o: src/%.c src/*.h
 	$(CC) $(FLAGS) -c -o $@ $<
 
 
+.PHONY: doc
+doc: info pdf dvi ps
+
+.PHONY: info
+info: epkill.info
+%.info: info/%.texinfo info/fdl.texinfo
+	makeinfo $<
+
+.PHONY: pdf
+pdf: epkill.pdf
+%.pdf: info/%.texinfo info/fdl.texinfo
+	mkdir -p obj
+	cd obj ; yes X | texi2pdf ../$<
+	mv obj/$@ $@
+
+.PHONY: dvi
+dvi: epkill.dvi
+%.dvi: info/%.texinfo info/fdl.texinfo
+	mkdir -p obj
+	cd obj ; yes X | $(TEXI2DVI) ../$<
+	mv obj/$@ $@
+
+.PHONY: ps
+ps: epkill.ps
+%.ps: info/%.texinfo info/fdl.texinfo
+	mkdir -p obj
+	cd obj ; yes X | texi2pdf --ps ../$<
+	mv obj/$@ $@
+
+
+
 .PHONY: install
-install: install-base
+install: install-base install-info
 
 .PHONY: install-base
 install-base: install-cmd install-copyright
 
+.PHONY: install-base
+install-all: install-base install-doc
+
 .PHONY: install-cmd
 install-cmd: install-dpkill install-dpgrep install-dpidof
+
 
 .PHONY: install-epkill
 ifeq ($(EPKILL_AS_SYMLINK),y)
@@ -94,6 +140,7 @@ install-dpgrep: src/dpgrep install-epgrep
 install-dpidof: src/dpidof install-epidof
 	install -m755 $< -- "$(DESTDIR)$(BINDIR)/dpidof"
 
+
 .PHONY: install-copyright
 install-copyright: install-copying install-license
 
@@ -108,6 +155,31 @@ install-license: LICENSE
 	install -m644 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
 
 
+.PHONY: install-doc
+install-doc: install-info install-pdf install-ps install-dvi
+
+.PHONY: install-info
+install-info: epkill.info
+	install -dm755 -- "$(DESTDIR)$(INFODIR)"
+	install -m644 $< -- "$(DESTDIR)$(INFODIR)/$(PKGNAME).info"
+
+.PHONY: install-pdf
+install-pdf: epkill.pdf
+	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
+	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).pdf"
+
+.PHONY: install-ps
+install-ps: epkill.ps
+	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
+	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).ps"
+
+.PHONY: install-dvi
+install-dvi: epkill.dvi
+	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
+	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).dvi"
+
+
+
 .PHONY: uninstall
 uninstall:
 	-rm -- "$(DESTDIR)$(BINDIR)/dpidof"
@@ -119,6 +191,11 @@ uninstall:
 	-rm -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/LICENSE"
 	-rm -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/COPYING"
 	-rmdir -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)"
+	-rm -- "$(DESTDIR)$(INFODIR)/$(PKGNAME).info"
+	-rm -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).pdf"
+	-rm -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).ps"
+	-rm -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).dvi"
+
 
 
 .PHONY: clean
