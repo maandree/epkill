@@ -96,7 +96,11 @@ void environment_parse(int* argc, char** argv)
       
       var = arg;
       if (eq)
-	arg = have ? NULL : getenv(var);
+	{
+	  arg = have ? NULL : getenv(var);
+	  if (!have && (arg == NULL))
+	    not = 1;
+	}
       else
 	{
 	  arg = strchr(arg, '=');
