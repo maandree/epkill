@@ -100,12 +100,12 @@ install-copyright: install-copying install-license
 .PHONY: install-copying
 install-copying: COPYING
 	install -dm755 -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)"
-	install -dm755 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
+	install -m644 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
 
 .PHONY: install-license
 install-license: LICENSE
 	install -dm755 -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)"
-	install -dm755 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
+	install -m644 $< -- "$(DESTDIR)$(LICENSEDIR)/$(PKGNAME)/$<"
 
 
 .PHONY: uninstall
