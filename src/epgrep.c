@@ -673,32 +673,32 @@ static void parse_opts(int argc, char** argv)
 #define univ_opts_used(ARG)  (opt = ARG, args_opts_used(ARG))
 #define kill_opts_used(ARG)  ( i_am_epkill && univ_opts_used(ARG))
 #define grep_opts_used(ARG)  (!i_am_epkill && univ_opts_used(ARG))
-#define criteria             have_criterion = 1
+#define criterion            have_criterion = 1
 #define optarg               (args_opts_get(opt)[0])
   
   if (kill_opts_used("-e"))  opt_echo = 1;
-  if (univ_opts_used("-F"))  ((criteria)), opt_pidfile = xstrdup(optarg);
-  if (univ_opts_used("-G"))  ((criteria)), opt_rgid = split_list(optarg, conv_gid);
+  if (univ_opts_used("-F"))  ((criterion)), opt_pidfile = xstrdup(optarg);
+  if (univ_opts_used("-G"))  ((criterion)), opt_rgid = split_list(optarg, conv_gid);
   if (univ_opts_used("-L"))  opt_lock = 1;
-  if (univ_opts_used("-P"))  ((criteria)), opt_ppid = split_list(optarg, conv_num);
-  if (univ_opts_used("-U"))  ((criteria)), opt_ruid = split_list(optarg, conv_uid);
+  if (univ_opts_used("-P"))  ((criterion)), opt_ppid = split_list(optarg, conv_num);
+  if (univ_opts_used("-U"))  ((criterion)), opt_ruid = split_list(optarg, conv_uid);
   if (univ_opts_used("-c"))  opt_count = 1;
   if (grep_opts_used("-d"))  opt_delim = xstrdup(optarg);
   if (univ_opts_used("-f"))  opt_full = 1;
-  if (univ_opts_used("-g"))  ((criteria)), opt_pgrp = split_list(optarg, conv_pgrp);
+  if (univ_opts_used("-g"))  ((criterion)), opt_pgrp = split_list(optarg, conv_pgrp);
   if (grep_opts_used("-l"))  opt_long = 1;
   if (grep_opts_used("-a"))  opt_longlong = 1;
-  if (univ_opts_used("-n"))  ((criteria)), opt_newest = 1;
-  if (univ_opts_used("-o"))  ((criteria)), opt_oldest = 1;
-  if (univ_opts_used("-s"))  ((criteria)), opt_sid = split_list(optarg, conv_sid);
-  if (univ_opts_used("-t"))  ((criteria)), opt_term = split_list(optarg, conv_str);
-  if (univ_opts_used("-u"))  ((criteria)), opt_euid = split_list(optarg, conv_uid);
-  if (grep_opts_used("-v"))  ((criteria)), opt_negate = 1;
+  if (univ_opts_used("-n"))  ((criterion)), opt_newest = 1;
+  if (univ_opts_used("-o"))  ((criterion)), opt_oldest = 1;
+  if (univ_opts_used("-s"))  ((criterion)), opt_sid = split_list(optarg, conv_sid);
+  if (univ_opts_used("-t"))  ((criterion)), opt_term = split_list(optarg, conv_str);
+  if (univ_opts_used("-u"))  ((criterion)), opt_euid = split_list(optarg, conv_uid);
+  if (grep_opts_used("-v"))  ((criterion)), opt_negate = 1;
   if (grep_opts_used("-w"))  opt_threads = 1;
   if (univ_opts_used("-x"))  opt_exact = 1;
   
   if (univ_opts_used("--ns"))
-    if (((criteria)), opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
+    if (((criterion)), opt_ns_pid = atoi(optarg), opt_ns_pid == 0)
       {
 	args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
 	exit(EXIT_FAILURE);
@@ -715,7 +715,7 @@ static void parse_opts(int argc, char** argv)
     }
   
 #undef optarg
-#undef criteria
+#undef criterion
 #undef grep_opts_used
 #undef kill_opts_used
   
@@ -732,7 +732,7 @@ static void parse_opts(int argc, char** argv)
   
   if      (args_files_count == 1)  opt_pattern = *args_files;
   else if (args_files_count > 1)   xerror(_("Only one pattern can be provided."));
-  else if (have_criterion == 0)    xerror(_("No matching criteria specified."));
+  else if (have_criterion == 0)    xerror(_("No matching criterion specified."));
 }
 
 
