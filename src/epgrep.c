@@ -720,7 +720,12 @@ static void parse_opts(int argc, char** argv)
 #undef kill_opts_used
   
   if (opt_oldest + opt_negate + opt_newest > 1)
-    xerror(_("-v, -n and -o are mutually exclusive options."));
+    {
+      if (i_am_epkill)
+	xerror(_("-n and -o are mutually exclusive options."));
+      else
+	xerror(_("-v, -n and -o are mutually exclusive options."));
+    }
   
   if (opt_lock && !opt_pidfile)
     xerror(_("%s: -L requires -F."));
