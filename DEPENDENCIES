@@ -13,6 +13,8 @@ BUILD DEPENDENCIES
   gcc
   make
   coreutils
+  texinfo (optional: for manuals)
+  texlive-core (optional: for pdf, ps and dvi manuals)
 
 
 INSTALL DEPENDENCIES
