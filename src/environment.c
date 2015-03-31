@@ -1,7 +1,7 @@
 /**
  * epkill — procps utilties with environment constraints
  * 
- * Copyright © 2014  Mattias Andrée (maandree@member.fsf.org)
+ * Copyright © 2014, 2015  Mattias Andrée (maandree@member.fsf.org)
  * 
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -125,6 +125,7 @@ void environment_parse(int* argc, char** argv)
       constraints[environment_count - 1] = constraint;
       
       memmove(argv + i, argv + i + 1, (size_t)(--n - i) * sizeof(char*));
+      i--;
     }
   *argc = n;
 }
@@ -191,7 +192,7 @@ int environment_test(pid_t pid, char* execname)
       size_t len = strlen(buf);
       char* value = strchr(buf, '=');
       
-      if (value == NULL)
+      if ((value == NULL) || (len == strlen(value)))
 	goto corrupt_environent;
       
       *value++ = '\0';

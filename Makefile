@@ -9,7 +9,7 @@ LOCALEDIR = $(DATADIR)/locale
 LICENSEDIR = $(DATADIR)/licenses
 
 PKGNAME = epkill
-VERSION = 1.0
+VERSION = 1.1
 
 
 WARN = -Wall -Wextra -pedantic -Wdouble-promotion -Wformat=2 -Winit-self       \
@@ -25,9 +25,11 @@ WARN = -Wall -Wextra -pedantic -Wdouble-promotion -Wformat=2 -Winit-self       \
        -Wsuggest-attribute=pure -Wsuggest-attribute=format -Wnormalized=nfkc
 # -Waggregate-return -Wwrite-strings
 
+OPTIMISE = -Og -g
+
 EXPORTS = -DVERSION='"$(VERSION)"' -DPACKAGE='"$(PKGNAME)"' -DLOCALEDIR='"$(LOCALEDIR)"'
 
-FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 $(EXPORTS) $(WARN)
+FLAGS = $$(pkg-config --cflags libprocps) -std=gnu99 $(OPTIMISE) $(EXPORTS) $(WARN)
 
 L = $$(pkg-config --libs libprocps) -largparser
 

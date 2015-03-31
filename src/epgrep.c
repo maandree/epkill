@@ -2,7 +2,7 @@
  * epgrep/epkill — pgrep/pkill with environment constraints
  * 
  * epgrep/epkill under the epkill project:
- *   Copyright © 2014        Mattias Andrée (maandree@member.fsf.org)
+ *   Copyright © 2014, 2015  Mattias Andrée (maandree@member.fsf.org)
  * 
  * pgrep/pkill under the procps-ng project:
  *   Copyright © 2000        Kjetil Torgrim Homme (kjetilho@ifi.uio.no)
@@ -30,6 +30,8 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <string.h>
+#include <stdlib.h>
 #include <pwd.h>
 #include <grp.h>
 #include <regex.h>
@@ -98,6 +100,7 @@ static void* new;
 #define xerror(string)       (fprintf(stderr, _("%s: %s\n"),     execname, string),       exit(EXIT_FAILURE))
 #define xxerror(string)      (fprintf(stderr, _("%s: %s: %s\n"), execname, string, name), exit(EXIT_FAILURE))
 #define xgetenv(name)        (new = getenv(name), new ? new : "")
+#define xfree(var)           (free(var), var = NULL)
 
 
 /* we need to fill in only namespace information */
@@ -161,10 +164,10 @@ static struct el* split_list(const char* restrict str, void (*convert)(const cha
     }
   while (sep_pos);
   
-  free(copy);
+  xfree(copy);
   if (!i)
     {
-      free(list);
+      xfree(list);
       list = NULL;
       args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
       exit(EXIT_FAILURE);
@@ -424,7 +427,7 @@ static regex_t* do_regcomp(void)
   re_err = regcomp(preg, re, REG_EXTENDED | REG_NOSUB);
   
   if (opt_exact)
-    free(re);
+    xfree(re);
   
   if (re_err)
     {
@@ -447,7 +450,7 @@ static struct el* select_procs(size_t* num)
   pid_t saved_pid = 0; /* for new/old support */
   unsigned long long saved_start_time; /* for new/old support */
   PROCTAB* ptp;
-  proc_t task;
+  proc_t* task;
   regex_t* preg;
   char cmdline[CMDSTRSIZE];
   char cmdsearch[CMDSTRSIZE];
@@ -464,37 +467,39 @@ static struct el* select_procs(size_t* num)
   if (opt_ns_pid && ns_read(opt_ns_pid, &ns_task))
     xerror(_("Error reading reference namespace information."));
   
-  memset(&task, 0, sizeof(task));
-  while (readproc(ptp, &task))
+  while ((task = readproc(ptp, NULL)))
     {
       int match = 1;
       
-      if (task.XXXID == myself)
-	continue;
-      else if (opt_newest && (task.start_time < saved_start_time))    match = 0;
-      else if (opt_oldest && (task.start_time > saved_start_time))    match = 0;
-      else if (opt_ppid   && !match_numlist(task.ppid,    opt_ppid))  match = 0;
-      else if (opt_pid    && !match_numlist(task.tgid,    opt_pid))   match = 0;
-      else if (opt_pgrp   && !match_numlist(task.pgrp,    opt_pgrp))  match = 0;
-      else if (opt_euid   && !match_numlist(task.euid,    opt_euid))  match = 0;
-      else if (opt_ruid   && !match_numlist(task.ruid,    opt_ruid))  match = 0;
-      else if (opt_rgid   && !match_numlist(task.rgid,    opt_rgid))  match = 0;
-      else if (opt_sid    && !match_numlist(task.session, opt_sid))   match = 0;
-      else if (opt_ns_pid && !match_ns(&task, &ns_task))              match = 0;
+      if (task->XXXID == myself)
+	{
+	  freeproc(task);
+	  continue;
+	}
+      else if (opt_newest && (task->start_time < saved_start_time))    match = 0;
+      else if (opt_oldest && (task->start_time > saved_start_time))    match = 0;
+      else if (opt_ppid   && !match_numlist(task->ppid,    opt_ppid))  match = 0;
+      else if (opt_pid    && !match_numlist(task->tgid,    opt_pid))   match = 0;
+      else if (opt_pgrp   && !match_numlist(task->pgrp,    opt_pgrp))  match = 0;
+      else if (opt_euid   && !match_numlist(task->euid,    opt_euid))  match = 0;
+      else if (opt_ruid   && !match_numlist(task->ruid,    opt_ruid))  match = 0;
+      else if (opt_rgid   && !match_numlist(task->rgid,    opt_rgid))  match = 0;
+      else if (opt_sid    && !match_numlist(task->session, opt_sid))   match = 0;
+      else if (opt_ns_pid && !match_ns(task, &ns_task))                match = 0;
       else if (opt_term)
 	{
-	  if (task.tty == 0)
+	  if (task->tty == 0)
 	    match = 0;
 	  else
 	    {
 	      char tty[256];
-	      dev_to_tty(tty, sizeof(tty) - 1, (dev_t)(task.tty), task.XXXID, ABBREV_DEV);
+	      dev_to_tty(tty, sizeof(tty) - 1, (dev_t)(task->tty), task->XXXID, ABBREV_DEV);
 	      match = match_strlist(tty, opt_term);
 	    }
 	}
       if (match)
-	match = environment_test(task.XXXID, execname);
-      if (task.cmdline && (opt_longlong || opt_full))
+	match = environment_test(task->XXXID, execname);
+      if (task->cmdline && (opt_longlong || opt_full))
 	{
 	  int i = 0;
 	  size_t bytes = sizeof(cmdline) - 1;
@@ -504,22 +509,22 @@ static struct el* select_procs(size_t* num)
 	  /* make room for SPC in loop below */
 	  bytes--;
 	  
-	  strncpy(cmdline, task.cmdline[i], bytes);
-	  bytes -= strlen(task.cmdline[i++]);
-	  while (task.cmdline[i] && (bytes > 0))
+	  strncpy(cmdline, task->cmdline[i], bytes);
+	  bytes -= strlen(task->cmdline[i++]);
+	  while (task->cmdline[i] && (bytes > 0))
 	    {
 	      strncat(cmdline, " ", bytes);
-	      strncat(cmdline, task.cmdline[i], bytes);
-	      bytes -= strlen(task.cmdline[i++]) + 1;
+	      strncat(cmdline, task->cmdline[i], bytes);
+	      bytes -= strlen(task->cmdline[i++]) + 1;
 	    }
 	}
       
       if (opt_long || opt_longlong || (match && opt_pattern))
-	strncpy(cmdoutput, (opt_longlong && task.cmdline) ? cmdline : task.cmd, CMDSTRSIZE);
+	strncpy(cmdoutput, (opt_longlong && task->cmdline) ? cmdline : task->cmd, CMDSTRSIZE);
       
       if (match && opt_pattern)
 	{
-	  strncpy(cmdsearch, (opt_full && task.cmdline) ? cmdline : task.cmd, CMDSTRSIZE);
+	  strncpy(cmdsearch, (opt_full && task->cmdline) ? cmdline : task->cmd, CMDSTRSIZE);
 	  if (regexec(preg, cmdsearch, 0, NULL, 0) != 0)
 	    match = 0;
 	}
@@ -528,11 +533,14 @@ static struct el* select_procs(size_t* num)
 	{
 	  if (opt_newest || opt_oldest)
 	    {
-	      if ((saved_start_time == task.start_time) &&
-		  (opt_newest ? (saved_pid > task.XXXID) : (saved_pid < task.XXXID)))
-		continue;
-	      saved_start_time = task.start_time;
-	      saved_pid = task.XXXID;
+	      if ((saved_start_time == task->start_time) &&
+		  (opt_newest ? (saved_pid > task->XXXID) : (saved_pid < task->XXXID)))
+		{
+		  freeproc(task);
+		  continue;
+		}
+	      saved_start_time = task->start_time;
+	      saved_pid = task->XXXID;
 	      matches = 0;
 	    }
 	  if (matches == size)
@@ -542,7 +550,7 @@ static struct el* select_procs(size_t* num)
 	    }
 	  if (opt_long || opt_longlong || opt_echo)
 	    list[matches].str = xstrdup(cmdoutput);
-	  list[matches++].num = task.XXXID;
+	  list[matches++].num = task->XXXID;
 	  
 	  /* epkill does not need subtasks!
 	   * this control is still done at
@@ -550,13 +558,15 @@ static struct el* select_procs(size_t* num)
 	   * control is free */
 	  if (opt_threads && !i_am_epkill)
 	    {
-	      proc_t subtask;
-	      memset(&subtask, 0, sizeof(subtask));
-	      while (readtask(ptp, &task, &subtask))
+	      proc_t* subtask;
+	      while ((subtask = readtask(ptp, task, NULL)))
 		{
 		  /* don't add redundand tasks */
-		  if (task.XXXID == subtask.XXXID)
-		    continue;
+		  if (task->XXXID == subtask->XXXID)
+		    {
+		      freeproc(subtask);
+		      continue;
+		    }
 		  
 		  /* eventually grow output buffer */
 		  if (matches == size)
@@ -566,13 +576,13 @@ static struct el* select_procs(size_t* num)
 		    }
 		  if (opt_long)
 		    list[matches].str = xstrdup(cmdoutput);
-		  list[matches++].num = subtask.XXXID;
-		  memset(&subtask, 0, sizeof(subtask));
+		  list[matches++].num = subtask->XXXID;
+		  freeproc(subtask);
 		}
 	    }
 	}
       
-      memset(&task, 0, sizeof(task));
+      freeproc(task);
     }
   closeproc(ptp);
   *num = matches;
@@ -741,24 +751,21 @@ static void parse_opts(int argc, char** argv)
 }
 
 
-static void cleanup(void)
-{
-  args_dispose();
-  environment_dispose();
-}
-
-
 int main(int argc, char** argv)
 {
   struct el* procs;
   size_t num;
+  
+  if (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes"))
+    argv[0] = "dpgrep";
+  if (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))
+    argv[0] = "dpkill";
   
   execname = *argv;
   
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
-  atexit(cleanup);
   
   environment_parse(&argc, argv);
   parse_opts(argc, argv);
@@ -791,6 +798,8 @@ int main(int argc, char** argv)
       else
 	output_numlist(procs, num);
   
+  args_dispose();
+  environment_dispose();
   return !num;
 }
 

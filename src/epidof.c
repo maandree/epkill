@@ -2,7 +2,7 @@
  * epidof – pidof with environment constraints
  * 
  * epidof under the epkill project:
- *   Copyright © 2014  Mattias Andrée (maandree@member.fsf.org)
+ *   Copyright © 2014, 2015  Mattias Andrée (maandree@member.fsf.org)
  * 
  * pidof under the procps-ng project:
  *   Copyright © 2013  Jaromir Capik (jcapik@redhat.com)
@@ -41,9 +41,8 @@ static size_t omit_count = 0;
 static char* program = NULL;
 
 /* switch flags */
-static int opt_single_shot    = 0;  /* -s */
-static int opt_scripts_too    = 0;  /* -x */
-static int opt_rootdir_check  = 0;  /* -c */
+static int opt_single_shot = 0;  /* -s */
+static int opt_scripts_too = 0;  /* -x */
 
 static char* epidof_root = NULL;
 
@@ -55,9 +54,10 @@ static void* new;
 #define basename(filename)   (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename)
 #define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(*argv), free(var), exit(EXIT_FAILURE), NULL))
 #define xgetenv(name)        (new = getenv(name), new ? new : "")
+#define xfree(var)           (free(var), var = NULL)
 
 
-static int is_omitted(pid_t pid)
+static __attribute__((pure)) int is_omitted(pid_t pid)
 {
   size_t i;
   for (i = 0; i < omit_count; i++)
@@ -96,7 +96,7 @@ static void select_procs(void)
 {
   static size_t size = 0;
   PROCTAB* ptp;
-  proc_t task;
+  proc_t* task;
   size_t match;
   char* cmd_arg0;
   char* cmd_arg0_base;
@@ -109,34 +109,33 @@ static void select_procs(void)
   
   program_base = basename(program);  /* get the input base name */
   ptp = openproc(PROC_FILLCOM | PROC_FILLSTAT);
-  memset(&task, 0, sizeof(task));
   
-  while (readproc(ptp, &task))
+  while ((task = readproc(ptp, NULL)))
     {
-      if (opt_rootdir_check)
+      if (epidof_root)
 	{
 	  /* get the /proc/<pid>/root symlink value */
-	  root_link = pid_link(task.XXXID, "root");
+	  root_link = pid_link(task->XXXID, "root");
 	  match = !strcmp(epidof_root, root_link);
-	  free(root_link);
+	  xfree(root_link);
 	  
 	  if (!match) /* root check failed */
 	    {
-	      memset(&task, 0, sizeof(task));
+	      freeproc(task);
 	      continue;
 	    }
 	}
       
-      if (!is_omitted(task.XXXID) && task.cmdline)
+      if (!is_omitted(task->XXXID) && task->cmdline)
 	{
-	  cmd_arg0 = *task.cmdline;
+	  cmd_arg0 = task->cmdline[0];
 	  
 	  /* processes starting with '-' are login shells */
 	  if (*cmd_arg0 == '-')
 	    cmd_arg0++;
 	  
 	  cmd_arg0_base = basename(cmd_arg0);           /* get the argv0 basename */
-	  exe_link      = pid_link(task.XXXID, "exe");  /* get the /proc/<pid>/exe symlink value */
+	  exe_link      = pid_link(task->XXXID, "exe");  /* get the /proc/<pid>/exe symlink value */
 	  exe_link_base = basename(exe_link);           /* get the exe_link basename */
 	  match = 0;
 	  
@@ -144,28 +143,30 @@ static void select_procs(void)
 	  
 	  if (__test(program, cmd_arg0) || __test(program, exe_link))
 	    match = 1;
-	  else if (opt_scripts_too && task.cmdline[1])
+	  else if (opt_scripts_too && task->cmdline[1])
 	    {
-	      cmd_arg1 = task.cmdline[1];
+	      cmd_arg1 = task->cmdline[1];
 	      cmd_arg1_base = basename(cmd_arg1);
 	      
-	      /* if script, then task.cmd = argv1, otherwise task.cmd = argv0 */
-	      if (task.cmd && !strncmp(task.cmd, cmd_arg1_base, strlen(task.cmd)) && __test(program, cmd_arg1))
+	      /* if script, then task->cmd = argv1, otherwise task->cmd = argv0 */
+	      if (task->cmd &&
+		  !strncmp(task->cmd, cmd_arg1_base, strlen(task->cmd)) &&
+		  __test(program, cmd_arg1))
 		match = 1;
 	    }
 	  
 #undef __test
 	  
-	  free(exe_link);
+	  xfree(exe_link);
 	  
-	  if (match && environment_test(task.XXXID, *argv))
+	  if (match && environment_test(task->XXXID, *argv))
 	    {
 	      if (proc_count == size)
 		procs = xrealloc(procs, __grow(size) * sizeof(*procs));
-	      procs[proc_count++] = task.XXXID;
+	      procs[proc_count++] = task->XXXID;
 	    }
 	}
-      memset(&task, 0, sizeof(task));
+      freeproc(task);
     }
   closeproc(ptp);
 }
@@ -200,16 +201,6 @@ static void add_to_omit_list(char* input_arg)
 }
 
 
-static void cleanup(void)
-{
-  free(procs);
-  free(omitted_procs);
-  free(epidof_root);
-  args_dispose();
-  environment_dispose();
-}
-
-
 
 int main(int argc, char** argv_)
 {
@@ -220,10 +211,12 @@ int main(int argc, char** argv_)
   
   argv = argv_;
   
+  if (!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes"))
+    argv[0] = "dpidof";
+  
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
-  atexit(cleanup);
   
   n = (ssize_t)(strlen(_(" [options] [program...]")) + strlen(*argv) + 1);
   usage_str = alloca((size_t)n * sizeof(char));
@@ -254,7 +247,7 @@ int main(int argc, char** argv_)
   if (args_opts_used("-s"))  opt_single_shot = 1;
   if (args_opts_used("-x"))  opt_scripts_too = 1;
   if (args_opts_used("-c") && (geteuid() == 0))
-    opt_rootdir_check = 1, epidof_root = pid_link(getpid(), "root");
+    epidof_root = pid_link(getpid(), "root");
   if (args_opts_used("-o"))
     {
       char** arr = args_opts_get("-o");
@@ -274,7 +267,7 @@ int main(int argc, char** argv_)
 	  found = 1;
 	  for (i = (ssize_t)proc_count - 1; i >= 0; i--) /* and display their PIDs */
 	    {
-	      printf(first_pid ? "%ld" : " %ld", (long)procs[i]);
+	      printf(first_pid ? "%ld" : " %ld", (long)(procs[i]));
 	      first_pid = 0;
 	      if (opt_single_shot)
 		break;
@@ -285,6 +278,12 @@ int main(int argc, char** argv_)
   /* final line feed */
   if (found)
     printf("\n");
+  
+  xfree(procs);
+  xfree(omitted_procs);
+  xfree(epidof_root);
+  args_dispose();
+  environment_dispose();
   
   return !found;
 }
