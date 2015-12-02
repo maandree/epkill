@@ -1,6 +1,36 @@
-epidof		pidof with environment constraints
-epgrep		pgrep with environment constraints
-epkill		pkill with environment constraints
-dpidof		epidof with display isolation
-dpgrep		epgrep with display isolation
-dpkill		epkill with display isolation
+NAME
+	epkill - procps utilties with environment constraints
+
+DESCRIPTION
+	epkill is a fork of procps-ng verion 3.3.10, but only
+	with the utilities pidof, pgrep, and pkill. These
+	utilities have been enhanced to allow specifying
+	constraints on the environment variables of the found
+	processes.
+
+	epidof          pidof with environment constraints
+	epgrep          pgrep with environment constraints
+	epkill          pkill with environment constraints
+
+	For each of these three programs a wrapper has been
+	added. These wrapper add constraints that make them
+	only find processes running in the display server
+	from which is it started.
+
+	dpidof          epidof with display isolation
+	dpgrep          epgrep with display isolation
+	dpkill          epkill with display isolation
+
+RATIONALE
+	If you have multiple display servers running, it is
+	common that you want to kill a program that is you
+	have running in multiple display servers, but only
+	kill it in a specific display server. For example,
+	if you are restarting you window manager you may
+	also want to restart panels and other programs.
+
+SEE ALSO
+	pidof(1), pgrep(1), pkill(1)
+
+	Full documentation available locally via: info '(epkill)'
+
