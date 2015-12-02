@@ -15,6 +15,7 @@ BUILD DEPENDENCIES
   make
   coreutils
   texinfo (optional)
+  auto-auto-complete (optional)
 
 
 INSTALL DEPENDENCIES

@@ -1,0 +1,24 @@
+(dpidof
+  (multiple argumented
+    ((options --omit-pid) (complete --omit-pid) (arg PID) (files -0)
+      (desc 'Do not return a specific process ID'))
+  )
+
+  (multiple unargument
+    ((options -c --check-root) (complete --check-root)
+      (desc 'Restrict to processes running under the same root'))
+
+    ((options -s --single-shot) (complete --single-shot)
+      (desc 'Return only one process ID'))
+
+    ((options -x --scripts) (complete --scripts)
+      (desc 'Test the name of scripts'))
+
+    ((options -h --help) (complete --help)
+      (desc 'Display this help information'))
+
+    ((options -V --version) (complete --version)
+      (desc 'Print the name and version of this program'))
+  )
+)
+

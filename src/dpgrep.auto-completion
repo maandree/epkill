@@ -1,0 +1,77 @@
+(dpgrep
+  (multiple argumented
+    ((options -d --delimiter) (complete -d --delimiter) (arg SYM) (files -0)
+      (desc 'Specify output delimiter'))
+
+    ((options -g --pgroup) (complete --pgroup) (arg PGRP) (files -0)
+      (desc 'Match listed process group ID:s'))
+
+    ((options -G --group) (complete --group) (arg GID) (files -0)
+      (desc 'Match real group ID:s'))
+
+    ((options -P --parent) (complete --parent) (arg PPID) (files -0)
+      (desc 'Match only child processes of the given parent'))
+
+    ((options -s --session) (complete --session) (arg SID) (files -0)
+      (desc 'Match session ID:s'))
+
+    ((options -t --terminal) (complete --terminal) (arg TERM) (files -0)
+      (desc 'Match by controlling terminal'))
+
+    ((options -u --euid) (complete --euid) (arg EUID) (files -0)
+      (desc 'Match by effective ID:s'))
+
+    ((options -U --uid) (complete --uid) (arg UID) (files -0)
+      (desc 'Match by real ID:s'))
+
+    ((options -F --pidfile) (complete --pidfile) (arg FILE) (files -r)
+      (desc 'Read PID:s from file'))
+
+    ((options --ns) (complete --ns) (arg PID) (files -0)
+      (desc 'Match the processes that belong to the same namespace as <PID>'))
+
+    ((options --nslist) (complete --nslist) (arg NAME) (files -0) (suggest namespaces)
+      (desc 'List which namespaces will be considered for the --ns option'))
+  )
+
+  (multiple unargument
+    ((options -l --list-name) (complete --list-name)
+      (desc 'List PID and process name'))
+
+    ((options -a --list-full) (complete --list-full)
+      (desc 'List the full command line as well as the process ID'))
+
+    ((options -v --inverse) (complete -v --inverse)
+      (desc 'Negates the matching'))
+
+    ((options -w --lightweight) (complete --lightweight)
+      (desc 'List all TID'))
+
+    ((options -c --count) (complete --count)
+      (desc 'Count of matching processes'))
+
+    ((options -f --full) (complete --full)
+      (desc 'Use full process name to match'))
+
+    ((options -n --newest) (complete --newest)
+      (desc 'Select most recently started'))
+
+    ((options -o --oldest) (complete --oldest)
+      (desc 'Select least recently started'))
+
+    ((options -x --exact) (complete --exact)
+      (desc 'Match exactly with the command name'))
+
+    ((options -L --logpidfile) (complete --logpidfile)
+      (desc 'Fail if PID file is not locked'))
+
+    ((options -h --help) (complete --help)
+      (desc 'Display this help information'))
+
+    ((options -V --version) (complete --version)
+      (desc 'Print the name and version of this program'))
+  )
+
+  (suggestion namespaces (verbatim ipc mnt net pid user uts))
+)
+

@@ -1,7 +1,7 @@
 # Maintainer: Mattias Andrée <`base64 -d`(bWFhbmRyZWUK)@member.fsf.org>
 
 pkgname=epkill
-pkgver=1.1.1
+pkgver=1.2
 pkgrel=1
 pkgdesc="procps utilties with environment constraints"
 arch=(i686 x86_64)
