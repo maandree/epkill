@@ -2,19 +2,19 @@ RUNTIME DEPENDENCIES
 
   glibc
   procps-ng
-  argparser
+  argparser-c
+  exec-as
 
 
 BUILD DEPENDENCIES
 
   glibc
   procps-ng
-  argparser
+  argparser-c
   gcc
   make
   coreutils
-  texinfo (optional: for manuals)
-  texlive-core (optional: for pdf, ps and dvi manuals)
+  texinfo (optional)
 
 
 INSTALL DEPENDENCIES

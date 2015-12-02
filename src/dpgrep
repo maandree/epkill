@@ -18,10 +18,8 @@
 
 set -e
 
-export THIS_IS_DPGREP=yes
-
 if [ -n "${DISPLAY}" ]; then
-    exec epgrep =DISPLAY "$@"
+    exec exec-as epgrep dpgrep =DISPLAY "$@"
 else
     echo "${0}: No display found."
 fi

@@ -18,10 +18,8 @@
 
 set -e
 
-export THIS_IS_DPIDOF=yes
-
 if [ -n "${DISPLAY}" ]; then
-    exec epidof =DISPLAY "$@"
+    exec exec-as epidof dpidof =DISPLAY "$@"
 else
     echo "${0}: No display found."
 fi

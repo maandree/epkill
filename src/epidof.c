@@ -53,7 +53,6 @@ static void* new;
 #define __grow(var)          (var = var * 5 / 4 + 1024)
 #define basename(filename)   (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename)
 #define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(*argv), free(var), exit(EXIT_FAILURE), NULL))
-#define xgetenv(name)        (new = getenv(name), new ? new : "")
 #define xfree(var)           (free(var), var = NULL)
 
 
@@ -211,9 +210,6 @@ int main(int argc, char** argv_)
   
   argv = argv_;
   
-  if (!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes"))
-    argv[0] = "dpidof";
-  
   setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
@@ -222,7 +218,7 @@ int main(int argc, char** argv_)
   usage_str = alloca((size_t)n * sizeof(char));
   sprintf(usage_str, "%s%s", *argv, _(" [options] [program...]"));
   
-  args_init(!strcmp(xgetenv("THIS_IS_DPIDOF"), "yes")
+  args_init(!strcmp(argv[0], "dpidof")
 	    ? _("epidof with display isolation")
 	    : _("pidof with environment constraints"),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
@@ -238,7 +234,7 @@ int main(int argc, char** argv_)
   args_parse(argc, argv);
   
   if (args_unrecognised_count || args_opts_used("-h"))  args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
-  else if (args_opts_used("-V"))                        printf("%s " VERSION, !strcmp(xgetenv("THIS_IS_DPIDOF"), "yes") ? "dpidof" : "epidof");
+  else if (args_opts_used("-V"))                        printf("%s " VERSION, !strcmp(argv[0], "dpidof") ? "dpidof" : "epidof");
   else                                                  goto cont;
   return args_unrecognised_count ? EXIT_FAILURE : EXIT_SUCCESS;
  cont:

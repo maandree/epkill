@@ -18,10 +18,8 @@
 
 set -e
 
-export THIS_IS_DPKILL=yes
-
 if [ -n "${DISPLAY}" ]; then
-    exec epkill =DISPLAY "$@"
+    exec exec-as epkill dpkill =DISPLAY "$@"
 else
     echo "${0}: No display found."
 fi

@@ -99,7 +99,6 @@ static void* new;
 #define xrealloc(var, size)  (new = realloc(var, size), new ? new : (perror(execname), free(var), exit(EXIT_FAILURE), NULL))
 #define xerror(string)       (fprintf(stderr, _("%s: %s\n"),     execname, string),       exit(EXIT_FAILURE))
 #define xxerror(string)      (fprintf(stderr, _("%s: %s: %s\n"), execname, string, name), exit(EXIT_FAILURE))
-#define xgetenv(name)        (new = getenv(name), new ? new : "")
 #define xfree(var)           (free(var), var = NULL)
 
 
@@ -621,10 +620,10 @@ static void parse_opts(int argc, char** argv)
   
   i_am_epkill = strstr(execname, "kill") != NULL;
   
-  args_init(i_am_epkill ? (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes")  ? _("epkill with display isolation")
-			                                              : _("pkill with environment constraints"))
-	                : (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes")  ? _("epgrep with display isolation")
-			                                              : _("pgrep with environment constraints")),
+  args_init(i_am_epkill ? (!strcmp(argv[0], "dpkill")  ? _("epkill with display isolation")
+			                                : _("pkill with environment constraints"))
+	                : (!strcmp(argv[0], "dpgrep")  ? _("epgrep with display isolation")
+			                               : _("pgrep with environment constraints")),
 	    usage_str, NULL, 0, 1, 0, args_standard_abbreviations);
   
   if (i_am_epkill)
@@ -670,9 +669,9 @@ static void parse_opts(int argc, char** argv)
     args_help(), fprintf(stderr, "%s\n\n", _(environment_synopsis));
   else if (args_opts_used("-V"))
     {
-      if      (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))  printf("dpkill " VERSION);
-      else if (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes"))  printf("dpgrep " VERSION);
-      else                                                 printf("%s " VERSION, i_am_epkill ? "epkill" : "epgrep");
+      if      (!strcmp(argv[0], "dpkill"))  printf("dpkill " VERSION);
+      else if (!strcmp(argv[0], "dpgrep"))  printf("dpgrep " VERSION);
+      else                                  printf("%s " VERSION, i_am_epkill ? "epkill" : "epgrep");
     }
   else
     goto cont;
@@ -755,11 +754,6 @@ int main(int argc, char** argv)
 {
   struct el* procs;
   size_t num;
-  
-  if (!strcmp(xgetenv("THIS_IS_DPGREP"), "yes"))
-    argv[0] = "dpgrep";
-  if (!strcmp(xgetenv("THIS_IS_DPKILL"), "yes"))
-    argv[0] = "dpkill";
   
   execname = *argv;
   
