@@ -70,30 +70,32 @@ obj/%.o: src/%.c src/*.h
 doc: info pdf dvi ps
 
 .PHONY: info
-info: epkill.info
-%.info: info/%.texinfo info/fdl.texinfo
+info: bin/epkill.info
+bin/%.info: doc/info/%.texinfo doc/info/fdl.texinfo
+	mkdir -p bin
 	makeinfo $<
+	mv $*.info $@
 
 .PHONY: pdf
-pdf: epkill.pdf
-%.pdf: info/%.texinfo info/fdl.texinfo
-	mkdir -p obj/pdf
-	cd obj/pdf ; yes X | texi2pdf ../../$<
-	mv obj/pdf/$@ $@
+pdf: bin/epkill.pdf
+bin/%.pdf: doc/info/%.texinfo doc/info/fdl.texinfo
+	mkdir -p obj/pdf bin
+	cd obj/pdf && texi2pdf ../../$< < /dev/null
+	mv obj/pdf/$*.pdf $@
 
 .PHONY: dvi
-dvi: epkill.dvi
-%.dvi: info/%.texinfo info/fdl.texinfo
-	mkdir -p obj/dvi
-	cd obj/dvi ; yes X | $(TEXI2DVI) ../../$<
-	mv obj/dvi/$@ $@
+dvi: bin/epkill.dvi
+bin/%.dvi: doc/info/%.texinfo doc/info/fdl.texinfo
+	mkdir -p obj/dvi bin
+	cd obj/dvi && $(TEXI2DVI) ../../$< < /dev/null
+	mv obj/dvi/$*.dvi $@
 
 .PHONY: ps
-ps: epkill.ps
-%.ps: info/%.texinfo info/fdl.texinfo
-	mkdir -p obj/ps
-	cd obj/ps ; yes X | texi2pdf --ps ../../$<
-	mv obj/ps/$@ $@
+ps: bin/epkill.ps
+bin/%.ps: doc/info/%.texinfo doc/info/fdl.texinfo
+	mkdir -p obj/ps bin
+	cd obj/ps && texi2pdf --ps ../../$< < /dev/null
+	mv obj/ps/$*.ps $@
 
 
 
@@ -161,22 +163,22 @@ install-license: LICENSE
 install-doc: install-info install-pdf install-ps install-dvi
 
 .PHONY: install-info
-install-info: epkill.info
+install-info: bin/epkill.info
 	install -dm755 -- "$(DESTDIR)$(INFODIR)"
 	install -m644 $< -- "$(DESTDIR)$(INFODIR)/$(PKGNAME).info"
 
 .PHONY: install-pdf
-install-pdf: epkill.pdf
+install-pdf: bin/epkill.pdf
 	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
 	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).pdf"
 
 .PHONY: install-ps
-install-ps: epkill.ps
+install-ps: bin/epkill.ps
 	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
 	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).ps"
 
 .PHONY: install-dvi
-install-dvi: epkill.dvi
+install-dvi: bin/epkill.dvi
 	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
 	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).dvi"
 

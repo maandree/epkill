@@ -1,11 +1,12 @@
 _/
-bin/
-obj/
+/bin/
+/obj/
 \#*\#
 .*
 !.git*
 *~
 *.bak
+*.new
 *.sw[op]
 *.out
 *.o
