@@ -1,0 +1,176 @@
+.TH EPGREP 1 EPKILL
+.SH NAME
+epgrep - pgrep with environment constraints
+.SH SYNOPSIS
+.BR epgrep
+.RI [ OPTION ]...\  PATTERN
+.SH DESCRIPTION
+.B epgrep
+looks through the currently running processes and
+lists the process identifiers which match the selection
+criteria to stdout. All the criteria have to match.
+.PP
+.I PATTERN
+Specifies an Extended Regular Expression for matching
+against the process names or command lines.
+.PP
+.B epgrep
+is enhancement of
+.BR pgrep (1)
+which adds support for filtering processes using
+constraints on the environment variables.
+.PP
+To restrict the found processes to those that have the
+environment variable
+.I VAR
+set to
+.IR VAL ,
+add the option
+.IR VAR \fB=\fP VAL .
+.I VAL
+can be empty, but
+.I VAR
+cannot be empty. This means the
+.IB VAR =
+will not pass if
+.I VAR
+is defined, it will only pass if the value of
+.I VAR
+is an empty string. To select process with the same
+value for
+.I VAR
+as the current process, you can use the shorthand
+.BR = \fIVAR\fP.
+The select processes that have
+.I VAR
+defined, possibly empty, use
+.BR += \FIVAR\fP.
+You can prefix any of these selectors with an
+exclamation point, to require the it does not
+hold true. For example,
+.BI ! VAR =
+will pass if
+.I VAR
+is not defined or is non-empty. You specify multiple
+constraints, a process will only be selected if all
+constraints are met. For example,
+.BI += VAR \ ! VAR =
+will pass only if
+.I VAR
+is defined and is not empty. If required, you can
+prefix the argument with an at-sign to force it to
+be parsed as an environment constraint if it would
+otherwise start with a hyphen.
+.SH OPTIONS
+.TP
+.BR \-a ,\  \-\-list-full
+List the full command line as well as the process ID.
+.TP
+.BR \-c ,\  \-\-count
+Count of matching processes.
+.TP
+.BR \-d ,\  \-\-delimiter \ \fISYM\fP
+Specify output delimiter.
+.TP
+.BR \-f ,\  \-\-full
+Use full process name to match.
+.TP
+.BR \-F ,\  \-\-pidfile \ \fIFILE\fP
+Read PID:s from file.
+.TP
+.BR \-g ,\  \-\-pgroup \ \fIPGRP\fP
+Match listed process group ID:s.
+.TP
+.BR \-G ,\  \-\-group \ \fIGID\fP
+Match real group ID:s.
+.TP
+.BR \-h ,\  \-\-help
+Display this help information.
+.TP
+.BR \-l ,\  \-\-list-name
+List PID and process name.
+.TP
+.BR \-L ,\  \-\-logpidfile
+Fail if PID file is not locked.
+.TP
+.BR \-n ,\  \-\-newest
+Select most recently started.
+.TP
+.BR \-o ,\  \-\-oldest
+Select least recently started.
+.TP
+.BR \-P ,\  \-\-parent \ \fIPPID\fP
+Match only child processes of the given parent.
+.TP
+.BR \-s ,\  \-\-session \ \fISID\fP
+Match session ID:s.
+.TP
+.BR \-t ,\  \-\-terminal \ \fITERM\fP
+Match by controlling terminal.
+.TP
+.BR \-u ,\  \-\-euid \ \fIEUID\fP
+Match by effective ID:s.
+.TP
+.BR \-U ,\  \-\-uid \ \fIUID\fP
+Match by real ID:s.
+.TP
+.BR \-v ,\  \-\-inverse
+Negates the matching.
+.TP
+.BR \-V ,\  \-\-version
+Print the name and version of this program.
+.TP
+.BR \-w ,\  \-\-lightweight
+List all TID.
+.TP
+.BR \-x ,\  \-\-exact
+Match exactly with the command name.
+.TP
+.BI \-\-ns\  PID
+Match the processes that belong to the same namespace as <PID>.
+.TP
+.BI \-\-nslist\  NAME
+List which namespaces will be considered for the --ns option.
+.br
+Available namespaces: ipc, mnt, net, pid, user, uts.
+.SH "EXIT STATUS"
+.TP
+.B 0
+One or more processes matched the criteria.
+.TP
+.B 1
+No processes matched.
+.TP
+.B 2
+Syntax error in the command line.
+.TP
+.B 3
+Fatal error.
+.SH RATIONALE
+If you have multiple display servers running, it is
+common that you want to kill a program that is you
+have running in multiple display servers, but only
+kill it in a specific display server. For example,
+if you are restarting you window manager you may
+also want to restart panels and other programs.
+.SH "SEE ALSO"
+.BR dpgrep (1),
+.BR epkill (1),
+.BR epidof (1),
+.BR pgrep (1)
+.PP
+Full documentation available locally via: info \(aq(epkill)\(aq
+.SH AUTHORS
+Principal author, Mattias Andrée.  See the COPYING file for the full
+list of authors.
+.SH LICENSE
+Copyright \(co 2014, 2015  Mattias Andrée
+.br
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+.br
+This is free software: you are free to change and redistribute it.
+.br
+There is NO WARRANTY, to the extent permitted by law.
+.SH BUGS
+Please report bugs to https://github.com/maandree/epkill/issues or to
+maandree@member.fsf.org

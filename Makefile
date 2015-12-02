@@ -5,6 +5,8 @@ DATA = /share
 DATADIR = $(PREFIX)$(DATA)
 DOCDIR = $(DATADIR)/doc
 INFODIR = $(DATADIR)/info
+MANDIR = $(DATADIR)/man
+MAN1DIR = $(MANDIR)/man1
 LOCALEDIR = $(DATADIR)/locale
 LICENSEDIR = $(DATADIR)/licenses
 
@@ -179,7 +181,7 @@ bin/%.zsh-completion: src/%.auto-completion
 
 
 .PHONY: install
-install: install-base install-info install-shell
+install: install-base install-info install-man install-shell
 
 .PHONY: install-base
 install-all: install-base install-doc install-shell
@@ -239,7 +241,7 @@ install-license: LICENSE
 
 
 .PHONY: install-doc
-install-doc: install-info install-pdf install-ps install-dvi
+install-doc: install-info install-pdf install-ps install-dvi install-man
 
 .PHONY: install-info
 install-info: bin/epkill.info
@@ -260,6 +262,40 @@ install-ps: bin/epkill.ps
 install-dvi: bin/epkill.dvi
 	install -dm755 -- "$(DESTDIR)$(DOCDIR)"
 	install -m644 $< -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).dvi"
+
+.PHONY: install-man
+install-man: install-man-epkill install-man-epgrep install-man-epidof \
+             install-man-dpkill install-man-dpgrep install-man-dpidof
+
+.PHONY: install-man-epkill
+install-man-epkill:
+	install -dm755 -- "$(DESTDIR)$(MAN1DIR)"
+	install -m644 doc/man/epkill.1 -- "$(DESTDIR)$(MAN1DIR)"
+
+.PHONY: install-man-epgrep
+install-man-epgrep:
+	install -dm755 -- "$(DESTDIR)$(MAN1DIR)"
+	install -m644 doc/man/epgrep.1 -- "$(DESTDIR)$(MAN1DIR)"
+
+.PHONY: install-man-epidof
+install-man-epidof:
+	install -dm755 -- "$(DESTDIR)$(MAN1DIR)"
+	install -m644 doc/man/epidof.1 -- "$(DESTDIR)$(MAN1DIR)"
+
+.PHONY: install-man-dpkill
+install-man-dpkill:
+	install -dm755 -- "$(DESTDIR)$(MAN1DIR)"
+	install -m644 doc/man/dpkill.1 -- "$(DESTDIR)$(MAN1DIR)"
+
+.PHONY: install-man-dpgrep
+install-man-dpgrep:
+	install -dm755 -- "$(DESTDIR)$(MAN1DIR)"
+	install -m644 doc/man/dpgrep.1 -- "$(DESTDIR)$(MAN1DIR)"
+
+.PHONY: install-man-dpidof
+install-man-dpidof:
+	install -dm755 -- "$(DESTDIR)$(MAN1DIR)"
+	install -m644 doc/man/dpidof.1 -- "$(DESTDIR)$(MAN1DIR)"
 
 
 .PHONY: install-shell
@@ -384,6 +420,12 @@ uninstall:
 	-rm -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).pdf"
 	-rm -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).ps"
 	-rm -- "$(DESTDIR)$(DOCDIR)/$(PKGNAME).dvi"
+	-rm -- "$(DESTDIR)$(MAN1DIR)/dpkill.1"
+	-rm -- "$(DESTDIR)$(MAN1DIR)/dpgrep.1"
+	-rm -- "$(DESTDIR)$(MAN1DIR)/dpidof.1"
+	-rm -- "$(DESTDIR)$(MAN1DIR)/epkill.1"
+	-rm -- "$(DESTDIR)$(MAN1DIR)/epgrep.1"
+	-rm -- "$(DESTDIR)$(MAN1DIR)/epidof.1"
 	-rm -- "$(DESTDIR)$(DATADIR)/bash-completion/completions/epkill"
 	-rm -- "$(DESTDIR)$(DATADIR)/fish/completions/epkill.fish"
 	-rm -- "$(DESTDIR)$(DATADIR)/zsh/site-functions/_epkill"
