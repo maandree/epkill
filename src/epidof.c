@@ -2,7 +2,7 @@
  * epidof – pidof with environment constraints
  * 
  * epidof under the epkill project:
- *   Copyright © 2014, 2015  Mattias Andrée (maandree@member.fsf.org)
+ *   Copyright © 2014, 2015  Mattias Andrée (m@maandree.se)
  * 
  * pidof under the procps-ng project:
  *   Copyright © 2013  Jaromir Capik (jcapik@redhat.com)

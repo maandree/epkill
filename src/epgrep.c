@@ -2,7 +2,7 @@
  * epgrep/epkill — pgrep/pkill with environment constraints
  * 
  * epgrep/epkill under the epkill project:
- *   Copyright © 2014, 2015  Mattias Andrée (maandree@member.fsf.org)
+ *   Copyright © 2014, 2015  Mattias Andrée (m@maandree.se)
  * 
  * pgrep/pkill under the procps-ng project:
  *   Copyright © 2000        Kjetil Torgrim Homme (kjetilho@ifi.uio.no)
